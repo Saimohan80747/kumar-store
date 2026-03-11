@@ -1,11 +1,80 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router';
-import { CreditCard, Banknote, Smartphone, MapPin, CheckCircle2, ShieldCheck } from 'lucide-react';
-import { useStore } from '../store';
+import { useSearchParams } from 'react-router';
+import { CreditCard, Banknote, Smartphone, MapPin, ShieldCheck, Tag, Locate } from 'lucide-react';
+import { useStore, FREE_DELIVERY_THRESHOLD, DELIVERY_FEE } from '../store';
 import type { Order } from '../store';
 import { toast } from 'sonner';
 import { Navigate } from 'react-router';
 import { OrderConfirmation } from './order-confirmation';
+
+export type GeocodedAddress = { address: string; houseNumber?: string };
+
+/** Reverse geocode lat/lng to a human-readable address and optional house number. */
+async function reverseGeocode(lat: number, lon: number): Promise<GeocodedAddress> {
+  // 1. Try Google Maps Geocoding API
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  if (apiKey) {
+    try {
+      const res = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${apiKey}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === 'OK' && data.results?.length > 0) {
+          const result = data.results[0];
+          const comps = result.address_components || [];
+          let houseNumber = '';
+          const get = (types: string[]) => {
+            const c = comps.find((x: { types?: string[] }) => x.types && types.some(t => x.types!.includes(t)));
+            return c ? (c.long_name || c.short_name || '') : '';
+          };
+          for (const c of comps) {
+            const name = c.long_name || c.short_name || '';
+            if (c.types?.includes('street_number') || c.types?.includes('subpremise')) {
+              houseNumber = houseNumber ? houseNumber + ', ' + name : name;
+            }
+          }
+          const route = get(['route']);
+          const sublocality = get(['sublocality_level_1', 'sublocality']);
+          const locality = get(['locality']);
+          const state = get(['administrative_area_level_1']);
+          const postcode = get(['postal_code']);
+          const country = get(['country']);
+          const addressParts = [route, sublocality, locality, state, postcode, country].filter(Boolean);
+          const address = addressParts.length > 0 ? addressParts.join(', ') : (result.formatted_address || '');
+          return { address, houseNumber: houseNumber || undefined };
+        }
+      }
+    } catch { /* Google failed, try fallback */ }
+  }
+
+  // 2. Fallback: OpenStreetMap Nominatim
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
+      { headers: { 'Accept-Language': 'en' } }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const addr = data.address;
+      if (addr && typeof addr === 'object') {
+        const houseNum = addr.house_number || addr.house_name || '';
+        const road = addr.road || addr.footway || addr.pedestrian || '';
+        const place = addr.suburb || addr.neighbourhood || addr.village || addr.town || addr.city || addr.municipality || '';
+        const state = addr.state || addr.province || '';
+        const postcode = addr.postcode || '';
+        const country = addr.country || '';
+        const addressParts = [road, place, state, postcode, country].filter(Boolean);
+        if (addressParts.length > 0) {
+          return { address: addressParts.join(', '), houseNumber: houseNum || undefined };
+        }
+      }
+      if (data.display_name) return { address: data.display_name };
+    }
+  } catch { /* Nominatim also failed */ }
+
+  return { address: `Lat ${lat.toFixed(6)}, Lng ${lon.toFixed(6)}` };
+}
 
 export function CheckoutPage() {
   const cart = useStore((s) => s.cart);
@@ -13,31 +82,38 @@ export function CheckoutPage() {
   const getCartTotal = useStore((s) => s.getCartTotal);
   const placeOrder = useStore((s) => s.placeOrder);
   const user = useStore((s) => s.user);
-  const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState('upi');
+  const [houseNumber, setHouseNumber] = useState('');
   const [address, setAddress] = useState(user?.address || '123 Main Street, Mumbai, Maharashtra 400001');
+  const [deliveryLocationUrl, setDeliveryLocationUrl] = useState<string | undefined>(undefined);
   const [deliverySlot, setDeliverySlot] = useState('morning');
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
   const [isPlacing, setIsPlacing] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   // Capture totals before cart is cleared
   const capturedTotalRef = useRef<number | null>(null);
+  // Read coupon info from URL search params (passed from cart page)
+  const [searchParams] = useSearchParams();
+  const couponCode = searchParams.get('coupon') || undefined;
+  const couponDiscount = searchParams.get('discount') ? Number(searchParams.get('discount')) : 0;
 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
   const subtotal = getCartTotal();
-  const delivery = subtotal > 999 ? 0 : 49;
-  const total = subtotal + delivery;
+  const discountedSubtotal = couponDiscount ? Math.max(0, subtotal - couponDiscount) : subtotal;
+  const delivery = discountedSubtotal > FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+  const total = discountedSubtotal + delivery;
 
   const handlePlaceOrder = async () => {
     if (isPlacing) return;
     setIsPlacing(true);
     capturedTotalRef.current = subtotal;
     // Build the order object before clearing cart
-    const orderItems = [...cart];
+    const fullAddress = houseNumber.trim() ? `${houseNumber.trim()}, ${address}` : address;
     try {
-      await placeOrder(paymentMethod);
+      await placeOrder(paymentMethod, delivery, fullAddress, deliveryLocationUrl, couponCode, couponDiscount || undefined);
       // Reconstruct the placed order from store's latest
       const latestOrders = useStore.getState().orders;
       const justPlaced = latestOrders[0];
@@ -55,7 +131,7 @@ export function CheckoutPage() {
     return (
       <OrderConfirmation
         order={placedOrder}
-        deliveryAddress={address}
+        deliveryAddress={houseNumber.trim() ? `${houseNumber.trim()}, ${address}` : address}
         deliverySlot={deliverySlot}
       />
     );
@@ -72,21 +148,78 @@ export function CheckoutPage() {
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1 space-y-5">
           {/* Delivery Address */}
-          <div className="bg-white border rounded-xl p-5">
+          <div className="bg-white border border-border/80 rounded-2xl p-5 shadow-sm">
             <h3 className="text-[16px] flex items-center gap-2 mb-4" style={{ fontWeight: 600 }}>
               <MapPin className="w-5 h-5 text-primary" /> Delivery Address
             </h3>
-            <textarea
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              rows={3}
-              className="w-full px-4 py-3 border rounded-lg bg-input-background text-[14px] outline-none focus:ring-2 focus:ring-primary/20"
-              placeholder="Enter delivery address"
-            />
+            <div className="space-y-3">
+              <div>
+                <label className="text-[12px] text-muted-foreground block mb-1">House / Flat / Building no.</label>
+                <input
+                  type="text"
+                  value={houseNumber}
+                  onChange={(e) => setHouseNumber(e.target.value)}
+                  className="w-full px-4 py-2.5 border rounded-lg bg-input-background text-[14px] outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 42, Flat 3A, Tower B"
+                />
+              </div>
+            <div className="flex gap-2">
+              <textarea
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                rows={3}
+                className="flex-1 px-4 py-3 border rounded-lg bg-input-background text-[14px] outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="Street, area, city, state, pincode"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!navigator.geolocation) {
+                    toast.error('Location is not supported by your browser');
+                    return;
+                  }
+                  setIsLocating(true);
+                  try {
+                    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                      navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000,
+                      });
+                    });
+                    const { latitude, longitude } = position.coords;
+                    const { address: locAddress, houseNumber: locHouse } = await reverseGeocode(latitude, longitude);
+                    setAddress(locAddress);
+                    setHouseNumber(locHouse || '');
+                    setDeliveryLocationUrl(`https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`);
+                    toast.success(locHouse ? 'Address with house no. filled.' : 'Location filled. Add house/flat no. if needed.');
+                  } catch (err) {
+                    const msg = err instanceof Error ? err.message : 'Unknown error';
+                    if (msg.includes('denied') || msg.includes('Permission')) {
+                      toast.error('Location permission denied. Allow location access or enter address manually.');
+                    } else if (msg.includes('unavailable') || msg.includes('timeout')) {
+                      toast.error('Location unavailable. Check GPS or enter address manually.');
+                    } else {
+                      toast.error('Could not get address from Google Maps. Enter manually.');
+                    }
+                  } finally {
+                    setIsLocating(false);
+                  }
+                }}
+                disabled={isLocating}
+                className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 border border-primary/30 rounded-lg bg-primary/5 text-primary hover:bg-primary/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                title="Use current location (Google Maps / device GPS)"
+              >
+                <Locate className="w-5 h-5" />
+                <span className="text-[11px]" style={{ fontWeight: 600 }}>{isLocating ? 'Getting…' : 'Current location'}</span>
+              </button>
+            </div>
+            <p className="text-[12px] text-muted-foreground mt-2">Allow location access when prompted. Add house/flat no. above if it wasn’t detected.</p>
+            </div>
           </div>
 
           {/* Delivery Slot */}
-          <div className="bg-white border rounded-xl p-5">
+          <div className="bg-white border border-border/80 rounded-2xl p-5 shadow-sm">
             <h3 className="text-[16px] mb-4" style={{ fontWeight: 600 }}>Delivery Slot</h3>
             <div className="grid grid-cols-3 gap-3">
               {[
@@ -97,7 +230,7 @@ export function CheckoutPage() {
                 <button
                   key={slot.id}
                   onClick={() => setDeliverySlot(slot.id)}
-                  className={`p-3 rounded-lg border text-center transition-all ${deliverySlot === slot.id ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'hover:bg-gray-50'}`}
+                  className={`p-3 rounded-xl border transition-all ${deliverySlot === slot.id ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'hover:bg-gray-50'}`}
                 >
                   <p className="text-[14px]" style={{ fontWeight: 500 }}>{slot.label}</p>
                   <p className="text-[12px] text-muted-foreground">{slot.time}</p>
@@ -107,7 +240,7 @@ export function CheckoutPage() {
           </div>
 
           {/* Payment Method */}
-          <div className="bg-white border rounded-xl p-5">
+          <div className="bg-white border border-border/80 rounded-2xl p-5 shadow-sm">
             <h3 className="text-[16px] flex items-center gap-2 mb-4" style={{ fontWeight: 600 }}>
               <CreditCard className="w-5 h-5 text-primary" /> Payment Method
             </h3>
@@ -120,7 +253,7 @@ export function CheckoutPage() {
                 <button
                   key={method.id}
                   onClick={() => setPaymentMethod(method.id)}
-                  className={`w-full flex items-center gap-3 p-4 rounded-lg border transition-all text-left ${paymentMethod === method.id ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'hover:bg-gray-50'}`}
+                  className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left ${paymentMethod === method.id ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'hover:bg-gray-50'}`}
                 >
                   <div className={`p-2 rounded-lg ${paymentMethod === method.id ? 'bg-primary text-white' : 'bg-gray-100'}`}>
                     <method.icon className="w-5 h-5" />
@@ -151,7 +284,7 @@ export function CheckoutPage() {
 
         {/* Summary */}
         <div className="lg:w-80 shrink-0">
-          <div className="bg-white border rounded-xl p-5 sticky top-40 space-y-4">
+          <div className="bg-white border border-border/80 rounded-2xl p-5 sticky top-40 space-y-4 shadow-sm">
             <h3 className="text-[16px]" style={{ fontWeight: 600 }}>Order Summary</h3>
 
             <div className="space-y-2 max-h-52 overflow-y-auto">
@@ -170,16 +303,22 @@ export function CheckoutPage() {
             <hr />
 
             <div className="space-y-2 text-[14px]">
-              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>Rs.{subtotal}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>Rs.{subtotal.toLocaleString()}</span></div>
+              {couponDiscount > 0 && (
+                <div className="flex justify-between text-primary">
+                  <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> Coupon ({couponCode})</span>
+                  <span>-Rs.{couponDiscount.toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between"><span className="text-muted-foreground">Delivery</span><span className={delivery === 0 ? 'text-primary' : ''}>{delivery === 0 ? 'FREE' : `Rs.${delivery}`}</span></div>
               <hr />
-              <div className="flex justify-between text-[18px]"><span style={{ fontWeight: 700 }}>Total</span><span style={{ fontWeight: 700 }}>Rs.{total}</span></div>
+              <div className="flex justify-between text-[18px]"><span style={{ fontWeight: 700 }}>Total</span><span style={{ fontWeight: 700 }}>Rs.{total.toLocaleString()}</span></div>
             </div>
 
             <button
               onClick={handlePlaceOrder}
               disabled={isPlacing}
-              className="w-full py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors text-[15px] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full py-3.5 bg-primary text-white rounded-xl hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/25 transition-all text-[15px] disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98]"
               style={{ fontWeight: 600 }}
             >
               {isPlacing ? (

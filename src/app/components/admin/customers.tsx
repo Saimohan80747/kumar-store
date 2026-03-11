@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 export function AdminCustomers() {
   const registeredUsers = useStore((s) => s.registeredUsers);
   const orders = useStore((s) => s.orders);
+  const toggleBlockUser = useStore((s) => s.toggleBlockUser);
   const [activeTab, setActiveTab] = useState<'customers' | 'shops'>('customers');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
@@ -13,17 +14,58 @@ export function AdminCustomers() {
   const customerUsers = useMemo(() => registeredUsers.filter((u) => u.role === 'customer'), [registeredUsers]);
   const shopUsers = useMemo(() => registeredUsers.filter((u) => u.role === 'shopowner'), [registeredUsers]);
 
-  // Calculate real profit per user from orders
-  const userProfitMap = useMemo(() => {
-    const map = new Map<string, number>();
-    orders.forEach((o) => {
-      const key = o.userName;
-      const existing = map.get(key) || 0;
-      // For simplicity, use the profit stored in user record or order total difference
-      map.set(key, existing + o.total);
-    });
+  // Calculate profits dynamically from delivered orders
+  const userStatsMap = useMemo(() => {
+    const map = new Map<string, { savings: number; profit: number }>();
+    orders
+      .filter((o) => o.status === 'delivered')
+      .forEach((o) => {
+        const key = o.userId;
+        if (!key) return;
+        const existing = map.get(key) || { savings: 0, profit: 0 };
+
+        // Calculate from order items if stored values don't exist
+        if (o.userRole === 'customer') {
+          // Use stored customerSavings or calculate from items
+          if (o.customerSavings !== undefined) {
+            existing.savings += o.customerSavings;
+          } else {
+            // Calculate: sum of (MRP - customerPrice) * quantity for each item
+            const calculatedSavings = o.items.reduce((sum, item) => {
+              const mrp = Number(item.product.mrp) || 0;
+              const customerPrice = Number(item.product.customerPrice) || 0;
+              return sum + ((mrp - customerPrice) * item.quantity);
+            }, 0);
+            existing.savings += calculatedSavings;
+          }
+        } else if (o.userRole === 'shopowner') {
+          // Use stored shopProfit or calculate from items
+          if (o.shopProfit !== undefined) {
+            existing.profit += o.shopProfit;
+          } else {
+            // Calculate: sum of (MRP - shopPrice) * quantity for each item
+            const calculatedProfit = o.items.reduce((sum, item) => {
+              const mrp = Number(item.product.mrp) || 0;
+              const shopPrice = Number(item.product.shopPrice) || 0;
+              return sum + ((mrp - shopPrice) * item.quantity);
+            }, 0);
+            existing.profit += calculatedProfit;
+          }
+        }
+        map.set(key, existing);
+      });
     return map;
   }, [orders]);
+
+  // Calculate totals
+  const totalCustomerProfit = customerUsers.reduce(
+    (s, u) => s + (userStatsMap.get(u.id)?.savings || 0),
+    0
+  );
+  const totalShopProfit = shopUsers.reduce(
+    (s, u) => s + (userStatsMap.get(u.id)?.profit || 0),
+    0
+  );
 
   const filteredCustomers = useMemo(() => customerUsers.filter((u) =>
     u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -35,9 +77,6 @@ export function AdminCustomers() {
     u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (u.shopName || '').toLowerCase().includes(searchQuery.toLowerCase())
   ), [shopUsers, searchQuery]);
-
-  const totalCustomerProfit = customerUsers.reduce((s, u) => s + (u.profit || 0), 0);
-  const totalShopProfit = shopUsers.reduce((s, u) => s + (u.profit || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -66,18 +105,16 @@ export function AdminCustomers() {
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab('customers')}
-            className={`px-4 py-2 rounded-lg text-[13px] transition-colors flex items-center gap-1.5 ${
-              activeTab === 'customers' ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 rounded-lg text-[13px] transition-colors flex items-center gap-1.5 ${activeTab === 'customers' ? 'bg-blue-600 text-white' : 'bg-white border hover:bg-gray-50'
+              }`}
             style={{ fontWeight: activeTab === 'customers' ? 600 : 400 }}
           >
             <Users className="w-3.5 h-3.5" /> Customer Users ({customerUsers.length})
           </button>
           <button
             onClick={() => setActiveTab('shops')}
-            className={`px-4 py-2 rounded-lg text-[13px] transition-colors flex items-center gap-1.5 ${
-              activeTab === 'shops' ? 'bg-primary text-white' : 'bg-white border hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 rounded-lg text-[13px] transition-colors flex items-center gap-1.5 ${activeTab === 'shops' ? 'bg-primary text-white' : 'bg-white border hover:bg-gray-50'
+              }`}
             style={{ fontWeight: activeTab === 'shops' ? 600 : 400 }}
           >
             <Store className="w-3.5 h-3.5" /> Shop Users ({shopUsers.length})
@@ -154,18 +191,36 @@ export function AdminCustomers() {
                           <td className="px-4 py-3 text-[12px] text-muted-foreground">{u.address || 'No address'}</td>
                           <td className="px-4 py-3 text-right">
                             <span className="text-[13px] text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full" style={{ fontWeight: 700 }}>
-                              <IndianRupee className="w-3 h-3 inline" />{(u.profit || 0).toLocaleString()}
+                              <IndianRupee className="w-3 h-3 inline" />{(userStatsMap.get(u.id)?.savings || 0).toLocaleString()}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className="flex items-center gap-1 text-primary text-[12px] justify-center">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Active
-                            </span>
+                            {u.blocked ? (
+                              <span className="flex items-center gap-1 text-red-600 text-[12px] justify-center">
+                                <Ban className="w-3.5 h-3.5" /> Blocked
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-primary text-[12px] justify-center">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Active
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-1 justify-center">
                               <button className="p-1.5 hover:bg-gray-100 rounded" onClick={() => toast.success(`Viewing ${u.name}`)}><Eye className="w-3.5 h-3.5 text-gray-500" /></button>
-                              <button className="p-1.5 hover:bg-gray-100 rounded" onClick={() => toast.error(`${u.name} blocked`)}><Ban className="w-3.5 h-3.5 text-red-500" /></button>
+                              <button
+                                className="p-1.5 hover:bg-gray-100 rounded"
+                                onClick={() => {
+                                  toggleBlockUser(u.id, !u.blocked);
+                                  toast.success(u.blocked ? `${u.name} unblocked` : `${u.name} blocked`);
+                                }}
+                              >
+                                {u.blocked ? (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                                ) : (
+                                  <Ban className="w-3.5 h-3.5 text-red-500" />
+                                )}
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -191,8 +246,8 @@ export function AdminCustomers() {
                         <p className="text-[11px] text-muted-foreground">{u.email}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-[14px] text-blue-700" style={{ fontWeight: 700 }}>Rs.{(u.profit || 0).toLocaleString()}</p>
-                        <p className="text-[10px] text-muted-foreground">profit</p>
+                        <p className="text-[14px] text-blue-700" style={{ fontWeight: 700 }}>Rs.{(userStatsMap.get(u.id)?.savings || 0).toLocaleString()}</p>
+                        <p className="text-[10px] text-muted-foreground">savings</p>
                       </div>
                       {expandedUser === u.id ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
                     </button>
@@ -202,7 +257,15 @@ export function AdminCustomers() {
                         <div className="flex items-center gap-1.5 text-muted-foreground"><MapPin className="w-3 h-3" /> {u.address || 'No address'}</div>
                         <div className="flex gap-2 pt-1">
                           <button className="flex-1 py-2 border rounded-lg text-[12px] flex items-center justify-center gap-1 hover:bg-gray-50" onClick={() => toast.success(`Viewing ${u.name}`)}><Eye className="w-3 h-3" /> View</button>
-                          <button className="flex-1 py-2 border border-red-200 text-red-500 rounded-lg text-[12px] flex items-center justify-center gap-1 hover:bg-red-50" onClick={() => toast.error(`${u.name} blocked`)}><Ban className="w-3 h-3" /> Block</button>
+                          <button
+                            className={`flex-1 py-2 border rounded-lg text-[12px] flex items-center justify-center gap-1 ${u.blocked ? 'border-green-200 text-green-600 hover:bg-green-50' : 'border-red-200 text-red-500 hover:bg-red-50'}`}
+                            onClick={() => {
+                              toggleBlockUser(u.id, !u.blocked);
+                              toast.success(u.blocked ? `${u.name} unblocked` : `${u.name} blocked`);
+                            }}
+                          >
+                            {u.blocked ? <><CheckCircle2 className="w-3 h-3" /> Unblock</> : <><Ban className="w-3 h-3" /> Block</>}
+                          </button>
                         </div>
                       </div>
                     )}
@@ -270,7 +333,16 @@ export function AdminCustomers() {
                           </td>
                           <td className="px-4 py-3">
                             <p className="text-[13px]" style={{ fontWeight: 500 }}>{u.shopName || '—'}</p>
-                            <p className="flex items-center gap-1 text-[11px] text-muted-foreground"><MapPin className="w-3 h-3" /> {u.shopLocation || '—'}</p>
+                            <p className="flex items-center gap-1 text-[11px] text-muted-foreground w-full">
+                              <MapPin className="w-3 h-3 shrink-0" />
+                              {u.shopLocationUrl ? (
+                                <a href={u.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">
+                                  {u.shopLocation || '—'}
+                                </a>
+                              ) : (
+                                <span className="truncate">{u.shopLocation || '—'}</span>
+                              )}
+                            </p>
                           </td>
                           <td className="px-4 py-3">
                             <div className="space-y-0.5">
@@ -282,18 +354,36 @@ export function AdminCustomers() {
                           <td className="px-4 py-3 text-right text-[13px]" style={{ fontWeight: 500 }}>Rs.{(u.creditLimit || 0).toLocaleString()}</td>
                           <td className="px-4 py-3 text-right">
                             <span className="text-[13px] text-primary bg-primary/10 px-2.5 py-1 rounded-full" style={{ fontWeight: 700 }}>
-                              <IndianRupee className="w-3 h-3 inline" />{(u.profit || 0).toLocaleString()}
+                              <IndianRupee className="w-3 h-3 inline" />{(userStatsMap.get(u.id)?.profit || 0).toLocaleString()}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className={`flex items-center gap-1 text-[12px] justify-center ${u.approved ? 'text-primary' : 'text-amber-600'}`}>
-                              <CheckCircle2 className="w-3.5 h-3.5" /> {u.approved ? 'Approved' : 'Pending'}
-                            </span>
+                            {u.blocked ? (
+                              <span className="flex items-center gap-1 text-red-600 text-[12px] justify-center">
+                                <Ban className="w-3.5 h-3.5" /> Blocked
+                              </span>
+                            ) : (
+                              <span className={`flex items-center gap-1 text-[12px] justify-center ${u.approved ? 'text-primary' : 'text-amber-600'}`}>
+                                <CheckCircle2 className="w-3.5 h-3.5" /> {u.approved ? 'Approved' : 'Pending'}
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-1 justify-center">
                               <button className="p-1.5 hover:bg-gray-100 rounded" onClick={() => toast.success(`Viewing ${u.name}`)}><Eye className="w-3.5 h-3.5 text-gray-500" /></button>
-                              <button className="p-1.5 hover:bg-gray-100 rounded" onClick={() => toast.error(`${u.name} blocked`)}><Ban className="w-3.5 h-3.5 text-red-500" /></button>
+                              <button
+                                className="p-1.5 hover:bg-gray-100 rounded"
+                                onClick={() => {
+                                  toggleBlockUser(u.id, !u.blocked);
+                                  toast.success(u.blocked ? `${u.name} unblocked` : `${u.name} blocked`);
+                                }}
+                              >
+                                {u.blocked ? (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                                ) : (
+                                  <Ban className="w-3.5 h-3.5 text-red-500" />
+                                )}
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -319,7 +409,7 @@ export function AdminCustomers() {
                         <p className="text-[11px] text-muted-foreground">{u.name}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-[14px] text-primary" style={{ fontWeight: 700 }}>Rs.{(u.profit || 0).toLocaleString()}</p>
+                        <p className="text-[14px] text-primary" style={{ fontWeight: 700 }}>Rs.{(userStatsMap.get(u.id)?.profit || 0).toLocaleString()}</p>
                         <p className="text-[10px] text-muted-foreground">profit</p>
                       </div>
                       {expandedUser === u.id ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
@@ -338,10 +428,27 @@ export function AdminCustomers() {
                         </div>
                         <div className="flex items-center gap-1.5 text-muted-foreground"><Mail className="w-3 h-3" /> {u.email}</div>
                         <div className="flex items-center gap-1.5 text-muted-foreground"><Phone className="w-3 h-3" /> {u.phone}</div>
-                        <div className="flex items-center gap-1.5 text-muted-foreground"><MapPin className="w-3 h-3" /> {u.shopLocation || '—'}</div>
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          {u.shopLocationUrl ? (
+                            <a href={u.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                              {u.shopLocation || '—'}
+                            </a>
+                          ) : (
+                            <span>{u.shopLocation || '—'}</span>
+                          )}
+                        </div>
                         <div className="flex gap-2 pt-1">
                           <button className="flex-1 py-2 border rounded-lg text-[12px] flex items-center justify-center gap-1 hover:bg-gray-50" onClick={() => toast.success(`Viewing ${u.name}`)}><Eye className="w-3 h-3" /> View</button>
-                          <button className="flex-1 py-2 border border-red-200 text-red-500 rounded-lg text-[12px] flex items-center justify-center gap-1 hover:bg-red-50" onClick={() => toast.error(`${u.name} blocked`)}><Ban className="w-3 h-3" /> Block</button>
+                          <button
+                            className={`flex-1 py-2 border rounded-lg text-[12px] flex items-center justify-center gap-1 ${u.blocked ? 'border-green-200 text-green-600 hover:bg-green-50' : 'border-red-200 text-red-500 hover:bg-red-50'}`}
+                            onClick={() => {
+                              toggleBlockUser(u.id, !u.blocked);
+                              toast.success(u.blocked ? `${u.name} unblocked` : `${u.name} blocked`);
+                            }}
+                          >
+                            {u.blocked ? <><CheckCircle2 className="w-3 h-3" /> Unblock</> : <><Ban className="w-3 h-3" /> Block</>}
+                          </button>
                         </div>
                       </div>
                     )}

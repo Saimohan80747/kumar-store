@@ -1,6 +1,12 @@
 node_modules
 dist
-.vite
-*.local
 .env
-.env.*
+.env.local
+.env.*.local
+*.log
+output_sarvam.log
+output_sarvam.txt
+ts_errors.txt
+vite-response.js
+test_sarvam.mjs
+test-auth-trigger.ts

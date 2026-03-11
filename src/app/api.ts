@@ -1,4 +1,4 @@
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
 const BASE = `https://${projectId}.supabase.co/functions/v1/make-server-8a0a2a06`;
 const SUPABASE_REST = `https://${projectId}.supabase.co/rest/v1`;
@@ -28,12 +28,19 @@ async function request(path: string, options?: RequestInit) {
     ...options,
     headers: { ...EDGE_HEADERS, ...(options?.headers || {}) },
   });
-  const data = await res.json();
-  if (!res.ok) {
-    console.error(`API error [${res.status}] ${path}:`, data);
-    throw new Error(data.error || `Request failed: ${res.status}`);
+  
+  const text = await res.text();
+  try {
+    const data = text ? JSON.parse(text) : {};
+    if (!res.ok) {
+      console.error(`API error [${res.status}] ${path}:`, data);
+      throw new Error(data.error || `Request failed: ${res.status}`);
+    }
+    return data;
+  } catch (err) {
+    console.error(`JSON Parse Error on ${path}:`, text.slice(0, 200)); // Log first 200 chars for debugging
+    throw new Error(`Invalid JSON response from ${path}`);
   }
-  return data;
 }
 
 // ─── Init / Seed ───
@@ -43,6 +50,8 @@ export const initDatabase = () => request('/init', { method: 'POST' });
 export const getUsers = () => request('/users');
 export const createUser = (user: any) =>
   request('/users', { method: 'POST', body: JSON.stringify(user) });
+export const updateUser = (id: string, updates: any) =>
+  request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(updates) });
 
 // ─── Auth ───
 export const loginUser = (email: string, password: string, role: string) =>
@@ -62,10 +71,47 @@ export const rejectShopRequest = (id: string) =>
 
 // ─── Orders ───
 export const getOrders = () => request('/orders');
+export const getOrdersByUser = (userId: string) => request(`/orders?user_id=${encodeURIComponent(userId)}`);
 export const createOrder = (order: any) =>
   request('/orders', { method: 'POST', body: JSON.stringify(order) });
 export const updateOrder = (id: string, updates: any) =>
   request(`/orders/${id}`, { method: 'PUT', body: JSON.stringify(updates) });
+
+// ─── Cart Items (kumar_cart table) ───
+export const createCartItems = async (orderId: string, items: any[]) => {
+  // Insert items one by one since Supabase REST expects individual objects
+  const results = [];
+  for (const item of items) {
+    const cartItem = {
+      order_id: orderId,
+      product_id: item.product.id,
+      product_name: item.product.name,
+      quantity: item.quantity,
+      price: item.price,
+      mrp: item.product.mrp,
+      customer_price: item.product.customerPrice,
+      shop_price: item.product.shopPrice,
+      purchase_price: item.product.purchasePrice,
+      image: item.product.image,
+    };
+    
+    const res = await fetchWithTimeout(
+      `${SUPABASE_REST}/kumar_cart`,
+      {
+        method: 'POST',
+        headers: REST_HEADERS,
+        body: JSON.stringify(cartItem),
+      }
+    );
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('Failed to save cart item:', data);
+      throw new Error(data.message || 'Failed to save cart item');
+    }
+    results.push(data);
+  }
+  return results;
+};
 
 // ─── Coupons ───
 export const getCoupons = () => request('/coupons');
@@ -219,3 +265,67 @@ export const deleteAllNotifications = async (userId: string) => {
 
 // ─── Analytics ───
 export const getAnalytics = () => request('/analytics');
+
+// ─── Cart (PostgREST direct) ───
+export const getCartItems = async (userId: string): Promise<{ product_id: string; quantity: number }[]> => {
+  const res = await fetchWithTimeout(
+    `${SUPABASE_REST}/kumar_cart_items?user_id=eq.${userId}&select=product_id,quantity`,
+    { headers: REST_HEADERS }
+  );
+  if (!res.ok) return [];
+  return res.json();
+};
+
+export const upsertCartItem = async (userId: string, productId: string, quantity: number) => {
+  const res = await fetchWithTimeout(
+    `${SUPABASE_REST}/kumar_cart_items?on_conflict=user_id,product_id`,
+    {
+      method: 'POST',
+      headers: { ...REST_HEADERS, Prefer: 'resolution=merge-duplicates,return=representation' },
+      body: JSON.stringify({
+        user_id: userId,
+        product_id: productId,
+        quantity,
+        updated_at: new Date().toISOString(),
+      }),
+    }
+  );
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.message || 'Failed to upsert cart item');
+  }
+  return { success: true };
+};
+
+export const removeCartItem = async (userId: string, productId: string) => {
+  const res = await fetchWithTimeout(
+    `${SUPABASE_REST}/kumar_cart_items?user_id=eq.${userId}&product_id=eq.${productId}`,
+    { method: 'DELETE', headers: REST_HEADERS }
+  );
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.message || 'Failed to remove cart item');
+  }
+  return { success: true };
+};
+
+export const clearCartItems = async (userId: string) => {
+  const res = await fetchWithTimeout(
+    `${SUPABASE_REST}/kumar_cart_items?user_id=eq.${userId}`,
+    { method: 'DELETE', headers: REST_HEADERS }
+  );
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.message || 'Failed to clear cart');
+  }
+  return { success: true };
+};
+
+// ─── Products (Edge Function) ───
+export const getProducts = () => request('/products');
+export const createProduct = (product: any) =>
+  request('/products', { method: 'POST', body: JSON.stringify(product) });
+export const updateProduct = (id: string, updates: any) =>
+  request(`/products/${id}`, { method: 'PUT', body: JSON.stringify(updates) });
+export const deleteProduct = (id: string) =>
+  request(`/products/${id}`, { method: 'DELETE' });

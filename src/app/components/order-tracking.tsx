@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router';
 import { motion } from 'motion/react';
 import {
   CheckCircle2,
   Package,
   Truck,
-  MapPin,
   Home,
   ArrowLeft,
   Copy,
@@ -17,24 +15,21 @@ import {
   ShoppingBag,
 } from 'lucide-react';
 import { useStore } from '../store';
-import { products } from '../data';
 import { toast } from 'sonner';
 
 const TRACKING_STEPS = [
-  { id: 'pending', label: 'Order Placed', desc: 'Your order has been received', icon: ShoppingBag },
-  { id: 'confirmed', label: 'Order Confirmed', desc: 'Seller has confirmed your order', icon: CheckCircle2 },
-  { id: 'packed', label: 'Packed', desc: 'Your items have been packed', icon: Package },
+  { id: 'placed', label: 'Order Placed', desc: 'Your order has been received', icon: ShoppingBag },
+  { id: 'accepted', label: 'Order Confirmed', desc: 'Seller has confirmed your order', icon: CheckCircle2 },
   { id: 'shipped', label: 'Shipped', desc: 'Your order is on the way', icon: Truck },
-  { id: 'out_for_delivery', label: 'Out for Delivery', desc: 'Order is nearby, arriving soon', icon: MapPin },
   { id: 'delivered', label: 'Delivered', desc: 'Order delivered successfully!', icon: Home },
 ];
 
 function getStepIndex(status: string): number {
   switch (status) {
-    case 'pending': return 0;
-    case 'confirmed': return 1;
-    case 'shipped': return 3;
-    case 'delivered': return 5;
+    case 'placed': return 0;
+    case 'accepted': return 1;
+    case 'shipped': return 2;
+    case 'delivered': return 3;
     default: return 0;
   }
 }
@@ -50,7 +45,7 @@ export function OrderTrackingPage() {
     return <Navigate to="/login" replace />;
   }
 
-  const order = orders.find((o) => o.id === id);
+  const order = orders.find((o) => o.id === id && o.userId === user.id);
 
   if (!order) {
     return (
@@ -117,7 +112,7 @@ export function OrderTrackingPage() {
       ? 'text-green-600 bg-green-50'
       : order.status === 'shipped'
         ? 'text-purple-600 bg-purple-50'
-        : order.status === 'confirmed'
+        : order.status === 'accepted'
           ? 'text-blue-600 bg-blue-50'
           : 'text-amber-600 bg-amber-50';
 
@@ -182,9 +177,8 @@ export function OrderTrackingPage() {
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-[17px]" style={{ fontWeight: 700 }}>Order Tracking</h2>
-          <div className={`flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-full ${
-            order.status === 'delivered' ? 'bg-green-50 text-green-600' : 'bg-primary/5 text-primary'
-          }`}>
+          <div className={`flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-full ${order.status === 'delivered' ? 'bg-green-50 text-green-600' : 'bg-primary/5 text-primary'
+            }`}>
             {order.status !== 'delivered' && (
               <motion.div
                 animate={{ scale: [1, 1.3, 1] }}
@@ -242,13 +236,12 @@ export function OrderTrackingPage() {
                     initial={{ scale: 0.8 }}
                     animate={{ scale: isCompleted || isActive ? 1 : 0.8 }}
                     transition={{ type: 'spring' }}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 border-2 transition-all duration-500 ${
-                      isCompleted
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 border-2 transition-all duration-500 ${isCompleted
                         ? 'bg-primary border-primary text-white'
                         : isActive
                           ? 'bg-primary/10 border-primary text-primary'
                           : 'bg-gray-50 border-gray-200 text-gray-300'
-                    }`}
+                      }`}
                   >
                     {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                   </motion.div>
@@ -271,9 +264,8 @@ export function OrderTrackingPage() {
                     transition={{ delay: 0.1 * index }}
                   >
                     <p
-                      className={`text-[15px] ${
-                        isActive ? 'text-primary' : isCompleted ? 'text-gray-900' : 'text-gray-400'
-                      }`}
+                      className={`text-[15px] ${isActive ? 'text-primary' : isCompleted ? 'text-gray-900' : 'text-gray-400'
+                        }`}
                       style={{ fontWeight: isActive ? 700 : isCompleted ? 600 : 400 }}
                     >
                       {step.label}

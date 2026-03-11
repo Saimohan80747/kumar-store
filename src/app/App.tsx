@@ -5,9 +5,7 @@ import { useStore } from './store';
 
 function DBInit() {
   const initDB = useStore((s) => s.initDB);
-  const restoreSession = useStore((s) => s.restoreSession);
   useEffect(() => {
-    restoreSession();
     initDB();
   }, []);
   return null;

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { Download, ChevronDown, ChevronUp, Eye, X, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStore, type OrderStatus } from '../../store';
 
@@ -17,10 +17,12 @@ export function AdminOrders() {
   const rejectOrder = useStore((s) => s.rejectOrder);
   const cancelOrder = useStore((s) => s.cancelOrder);
   const updateOrderStatus = useStore((s) => s.updateOrderStatus);
+  const getPrice = useStore((s) => s.getPrice);
 
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [viewingOrder, setViewingOrder] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return orders
@@ -30,21 +32,46 @@ export function AdminOrders() {
   }, [orders, typeFilter, statusFilter]);
 
   const summary = useMemo(() => {
+    const b2c = filtered.filter((o) => o.userRole !== 'shopowner').length;
+    const b2b = filtered.filter((o) => o.userRole === 'shopowner').length;
     const delivered = filtered.filter((o) => o.status === 'delivered');
+
     return {
       total: filtered.length,
       delivered: delivered.length,
       revenue: delivered.reduce((s, o) => s + o.total, 0),
-      b2c: orders.filter((o) => o.userRole !== 'shopowner').length,
-      b2b: orders.filter((o) => o.userRole === 'shopowner').length,
+      b2c: b2c,
+      b2b: b2b,
     };
-  }, [filtered, orders]);
+  }, [filtered]);
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
     const order = orders.find((o) => o.id === orderId);
     if (!order || order.status === newStatus) return;
 
-    if (newStatus === 'accepted' && order.status === 'placed') {
+    // Enforce allowed transitions:
+    // placed -> accepted | rejected | cancelled
+    // accepted -> shipped | cancelled
+    // shipped -> delivered
+    // delivered / cancelled / rejected -> final
+    const from = order.status;
+    const allowedNext: OrderStatus[] =
+      from === 'placed'
+        ? ['accepted', 'rejected', 'cancelled']
+        : from === 'accepted'
+          ? ['shipped', 'cancelled']
+          : from === 'shipped'
+            ? ['delivered']
+            : from === 'delivered' || from === 'cancelled' || from === 'rejected'
+              ? []
+              : ['delivered'];
+
+    if (!allowedNext.includes(newStatus)) {
+      toast.error('This status change is not allowed from the current state.');
+      return;
+    }
+
+    if (newStatus === 'accepted') {
       const result = acceptOrder(orderId);
       if (result.success) toast.success(result.message);
       else toast.error(result.message);
@@ -111,8 +138,7 @@ export function AdminOrders() {
               <tr>
                 <th className="text-left px-4 py-3">Order ID</th>
                 <th className="text-left px-4 py-3">Customer</th>
-                <th className="text-left px-4 py-3">Type</th>
-                <th className="text-left px-4 py-3">Items</th>
+                <th className="text-left px-4 py-3">Address</th>
                 <th className="text-left px-4 py-3">Total</th>
                 <th className="text-left px-4 py-3">Status</th>
                 <th className="text-left px-4 py-3">Date</th>
@@ -124,37 +150,57 @@ export function AdminOrders() {
                 <tr key={o.id} className="border-t hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 text-[13px]" style={{ fontWeight: 500 }}>#{o.id.slice(0, 8)}</td>
                   <td className="px-4 py-3">{o.userName}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] ${o.userRole === 'shopowner' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}`} style={{ fontWeight: 500 }}>
-                      {o.userRole === 'shopowner' ? 'B2B' : 'B2C'}
-                    </span>
+                  <td className="px-4 py-3 text-[12px] max-w-[200px] truncate" title={o.deliveryAddress || '—'}>
+                    {o.deliveryLocationUrl ? (
+                      <a href={o.deliveryLocationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+                        {o.deliveryAddress} <MapPin className="w-3 h-3 shrink-0" />
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">{o.deliveryAddress || '—'}</span>
+                    )}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{o.items.reduce((s, i) => s + i.quantity, 0)}</td>
                   <td className="px-4 py-3" style={{ fontWeight: 600 }}>Rs.{o.total.toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2.5 py-0.5 rounded-full text-[11px] capitalize ${STATUS_STYLES[o.status] || 'bg-gray-50 text-gray-600'}`} style={{ fontWeight: 500 }}>{o.status}</span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground text-[13px]">{o.date}</td>
                   <td className="px-4 py-3">
-                    {o.status !== 'delivered' && o.status !== 'cancelled' && o.status !== 'rejected' ? (
-                      <select
-                        value={o.status}
-                        onChange={(e) => handleStatusChange(o.id, e.target.value as OrderStatus)}
-                        className={`px-2.5 py-1 rounded-lg text-[12px] border outline-none cursor-pointer capitalize ${STATUS_STYLES[o.status] || 'bg-gray-50 text-gray-600'}`}
-                        style={{ fontWeight: 500 }}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setViewingOrder(o.id)}
+                        className="p-1.5 hover:bg-gray-100 rounded text-blue-600"
+                        title="View Order"
                       >
-                        {ALL_STATUSES.map((s) => (
-                          <option key={s} value={s} className="capitalize">{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span className="text-[12px] text-muted-foreground italic">Final</span>
-                    )}
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      {o.status !== 'delivered' && o.status !== 'cancelled' && o.status !== 'rejected' ? (
+                        <select
+                          value={o.status}
+                          onChange={(e) => handleStatusChange(o.id, e.target.value as OrderStatus)}
+                          className={`px-2.5 py-1 rounded-lg text-[12px] border outline-none cursor-pointer capitalize ${STATUS_STYLES[o.status] || 'bg-gray-50 text-gray-600'}`}
+                          style={{ fontWeight: 500 }}
+                        >
+                          {ALL_STATUSES.filter((s) => {
+                            if (o.status === 'placed') return ['placed', 'accepted', 'rejected', 'cancelled'].includes(s);
+                            if (o.status === 'accepted') return ['accepted', 'shipped', 'cancelled'].includes(s);
+                            if (o.status === 'shipped') return ['shipped', 'delivered'].includes(s);
+                            if (o.status === 'delivered' || o.status === 'cancelled' || o.status === 'rejected') return s === o.status;
+                            return ['delivered'].includes(s);
+                          }).map((s) => (
+                            <option key={s} value={s} className="capitalize">
+                              {s.charAt(0).toUpperCase() + s.slice(1)}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="text-[12px] text-muted-foreground italic">Final</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-10 text-muted-foreground text-[14px]">No orders match your filters</td></tr>
+                <tr><td colSpan={7} className="text-center py-10 text-muted-foreground text-[14px]">No orders match your filters</td></tr>
               )}
             </tbody>
           </table>
@@ -166,29 +212,35 @@ export function AdminOrders() {
           {filtered.map((o) => (
             <div key={o.id} className="p-3">
               <button className="w-full flex items-center justify-between" onClick={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)}>
-                <div className="text-left">
+                <div className="text-left min-w-0 flex-1">
                   <p className="text-[13px]" style={{ fontWeight: 500 }}>#{o.id.slice(0, 8)} · {o.userName}</p>
-                  <p className="text-[11px] text-muted-foreground">{o.date} · {o.items.reduce((s, i) => s + i.quantity, 0)} items</p>
+                  <p className="text-[11px] text-muted-foreground truncate" title={o.deliveryAddress || '—'}>{o.date}{o.deliveryAddress ? ` · ${o.deliveryAddress}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="text-right">
                     <p className="text-[13px]" style={{ fontWeight: 600 }}>Rs.{o.total.toLocaleString()}</p>
-                    <span className={`text-[11px] capitalize ${STATUS_STYLES[o.status]?.split(' ')[1] || 'text-gray-600'}`}>{o.status}</span>
+                    <span className={`text-[11px] capitalize ${STATUS_STYLES[o.status] || 'text-gray-600'}`}>{o.status}</span>
                   </div>
                   {expandedOrder === o.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                 </div>
               </button>
               {expandedOrder === o.id && (
                 <div className="mt-3 pt-3 border-t space-y-2">
-                  <div className="flex items-center justify-between text-[12px]">
-                    <span className="text-muted-foreground">Type</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] ${o.userRole === 'shopowner' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}`}>{o.userRole === 'shopowner' ? 'B2B' : 'B2C'}</span>
+                  <div className="text-[12px]">
+                    <span className="text-muted-foreground">Address</span>
+                    {o.deliveryLocationUrl ? (
+                      <a href={o.deliveryLocationUrl} target="_blank" rel="noopener noreferrer" className="mt-0.5 text-primary hover:underline flex items-center gap-1" style={{ fontWeight: 500 }}>
+                        {o.deliveryAddress} <MapPin className="w-3 h-3 shrink-0" />
+                      </a>
+                    ) : (
+                      <p className="mt-0.5" style={{ fontWeight: 500 }}>{o.deliveryAddress || '—'}</p>
+                    )}
                   </div>
                   <div className="text-[12px] space-y-1">
                     {o.items.map((item, idx) => (
                       <div key={idx} className="flex justify-between text-muted-foreground">
                         <span className="truncate flex-1">{item.product.name} × {item.quantity}</span>
-                        <span>Rs.{(item.product.mrp * item.quantity).toLocaleString()}</span>
+                        <span>Rs.{(getPrice(item.product) * item.quantity).toLocaleString()}</span>
                       </div>
                     ))}
                   </div>
@@ -201,8 +253,16 @@ export function AdminOrders() {
                         className={`w-full px-3 py-2 rounded-lg text-[13px] border outline-none cursor-pointer capitalize ${STATUS_STYLES[o.status] || 'bg-gray-50 text-gray-600'}`}
                         style={{ fontWeight: 500 }}
                       >
-                        {ALL_STATUSES.map((s) => (
-                          <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                        {ALL_STATUSES.filter((s) => {
+                          if (o.status === 'placed') return ['placed', 'accepted', 'rejected', 'cancelled'].includes(s);
+                          if (o.status === 'accepted') return ['accepted', 'shipped', 'cancelled'].includes(s);
+                          if (o.status === 'shipped') return ['shipped', 'delivered'].includes(s);
+                          if (o.status === 'delivered' || o.status === 'cancelled' || o.status === 'rejected') return s === o.status;
+                          return ['delivered'].includes(s);
+                        }).map((s) => (
+                          <option key={s} value={s}>
+                            {s.charAt(0).toUpperCase() + s.slice(1)}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -215,6 +275,89 @@ export function AdminOrders() {
           ))}
         </div>
       </div>
+
+      {/* View Order Modal */}
+      {viewingOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-auto">
+            {(() => {
+              const order = orders.find((o) => o.id === viewingOrder);
+              if (!order) return null;
+              return (
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Order Details - {order.id}</h3>
+                    <button
+                      onClick={() => setViewingOrder(null)}
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Customer</p>
+                        <p className="font-medium">{order.userName}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Date</p>
+                        <p className="font-medium">{order.date}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground">Address</p>
+                        {order.deliveryLocationUrl ? (
+                          <a href={order.deliveryLocationUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline flex items-center gap-1">
+                            {order.deliveryAddress} <MapPin className="w-4 h-4 shrink-0" />
+                          </a>
+                        ) : (
+                          <p className="font-medium">{order.deliveryAddress || '—'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Status</p>
+                        <span className={`px-2 py-0.5 rounded-full text-xs capitalize ${STATUS_STYLES[order.status]}`}>
+                          {order.status}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Total</p>
+                        <p className="font-medium">Rs.{order.total.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="border-t pt-4">
+                      <h4 className="font-medium mb-3">Ordered Products</h4>
+                      <div className="space-y-2">
+                        {order.items && order.items.length > 0 ? (
+                          order.items.map((item, idx) => (
+                            <div key={idx} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                              <img
+                                src={item.product?.image || '/placeholder.png'}
+                                alt={item.product?.name || 'Product'}
+                                className="w-12 h-12 rounded object-cover"
+                              />
+                              <div className="flex-1">
+                                <p className="font-medium text-sm">{item.product?.name || 'Unknown Product'}</p>
+                                <p className="text-xs text-muted-foreground">{item.product?.brand || ''}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-medium text-sm">Rs.{(item.product?.customerPrice * item.quantity || 0).toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground">Qty: {item.quantity || 0}</p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">No items found in this order</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

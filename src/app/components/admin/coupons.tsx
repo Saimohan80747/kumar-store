@@ -19,7 +19,7 @@ export function AdminCoupons() {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white border rounded-xl p-4">
           <p className="text-[13px] text-muted-foreground">Total Coupons</p>
           <p className="text-[28px]" style={{ fontWeight: 700 }}>{coupons.length}</p>
@@ -75,13 +75,12 @@ export function AdminCoupons() {
                   <td className="px-4 py-3 text-muted-foreground">{c.type}</td>
                   <td className="px-4 py-3">Rs.{c.minOrder}</td>
                   <td className="px-4 py-3">
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full ${
-                      c.forRole === 'Shop Owner' ? 'bg-primary/10 text-primary' : c.forRole === 'Customer' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100'
-                    }`} style={{ fontWeight: 500 }}>{c.forRole}</span>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full ${c.forRole === 'Shop Owner' ? 'bg-primary/10 text-primary' : c.forRole === 'Customer' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100'
+                      }`} style={{ fontWeight: 500 }}>{c.forRole}</span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" style={{ minWidth: '90px' }}>
                     <div>
-                      <span className="text-[13px]">{c.uses}/{c.maxUses}</span>
+                      <span className="text-[13px] whitespace-nowrap">{c.uses}/{c.maxUses}</span>
                       <div className="w-16 bg-gray-100 rounded-full h-1.5 mt-1">
                         <div className="bg-primary rounded-full h-1.5" style={{ width: `${Math.min((c.uses / c.maxUses) * 100, 100)}%` }} />
                       </div>

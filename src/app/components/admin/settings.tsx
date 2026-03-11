@@ -19,9 +19,8 @@ export function AdminSettings() {
           <button
             key={s.id}
             onClick={() => setActiveSection(s.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] whitespace-nowrap transition-colors ${
-              activeSection === s.id ? 'bg-primary text-white' : 'bg-white border hover:bg-gray-50'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] whitespace-nowrap transition-colors ${activeSection === s.id ? 'bg-primary text-white' : 'bg-white border hover:bg-gray-50'
+              }`}
             style={{ fontWeight: activeSection === s.id ? 600 : 400 }}
           >
             <s.icon className="w-4 h-4" /> {s.label}
@@ -45,35 +44,35 @@ function GeneralSettings() {
         <div className="space-y-4">
           <div>
             <label className="text-[13px] text-muted-foreground mb-1 block">Store Name</label>
-            <div className="flex items-center border rounded-lg bg-gray-50 focus-within:ring-2 focus-within:ring-primary/20">
+            <div className="flex items-center border rounded-lg bg-gray-50 focus-within:border-primary/40">
               <Store className="w-4 h-4 text-muted-foreground ml-3" />
               <input defaultValue="Kumar Store" className="flex-1 px-3 py-2.5 bg-transparent outline-none text-[14px]" />
             </div>
           </div>
           <div>
             <label className="text-[13px] text-muted-foreground mb-1 block">Contact Email</label>
-            <div className="flex items-center border rounded-lg bg-gray-50 focus-within:ring-2 focus-within:ring-primary/20">
+            <div className="flex items-center border rounded-lg bg-gray-50 focus-within:border-primary/40">
               <Mail className="w-4 h-4 text-muted-foreground ml-3" />
               <input defaultValue="admin@kumarstore.com" className="flex-1 px-3 py-2.5 bg-transparent outline-none text-[14px]" />
             </div>
           </div>
           <div>
             <label className="text-[13px] text-muted-foreground mb-1 block">Phone</label>
-            <div className="flex items-center border rounded-lg bg-gray-50 focus-within:ring-2 focus-within:ring-primary/20">
+            <div className="flex items-center border rounded-lg bg-gray-50 focus-within:border-primary/40">
               <Phone className="w-4 h-4 text-muted-foreground ml-3" />
               <input defaultValue="1800-123-4567" className="flex-1 px-3 py-2.5 bg-transparent outline-none text-[14px]" />
             </div>
           </div>
           <div>
             <label className="text-[13px] text-muted-foreground mb-1 block">Address</label>
-            <div className="flex items-center border rounded-lg bg-gray-50 focus-within:ring-2 focus-within:ring-primary/20">
+            <div className="flex items-center border rounded-lg bg-gray-50 focus-within:border-primary/40">
               <MapPin className="w-4 h-4 text-muted-foreground ml-3" />
               <input defaultValue="Mumbai, Maharashtra, India" className="flex-1 px-3 py-2.5 bg-transparent outline-none text-[14px]" />
             </div>
           </div>
           <div>
             <label className="text-[13px] text-muted-foreground mb-1 block">Website</label>
-            <div className="flex items-center border rounded-lg bg-gray-50 focus-within:ring-2 focus-within:ring-primary/20">
+            <div className="flex items-center border rounded-lg bg-gray-50 focus-within:border-primary/40">
               <Globe className="w-4 h-4 text-muted-foreground ml-3" />
               <input defaultValue="www.kumarstore.com" className="flex-1 px-3 py-2.5 bg-transparent outline-none text-[14px]" />
             </div>
@@ -128,24 +127,83 @@ function NotificationSettings() {
 }
 
 function SecuritySettings() {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleUpdatePassword = () => {
+    // Get stored admin password
+    const storedPassword = localStorage.getItem('admin_password') || 'kumarstore@admin2026';
+
+    if (currentPassword !== storedPassword) {
+      toast.error('Current password is incorrect');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    // Store new password
+    localStorage.setItem('admin_password', newPassword);
+
+    // Clear admin session so user must re-login with new password
+    sessionStorage.removeItem('kumarstore_admin_auth');
+
+    // Clear form
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+
+    toast.success('Password updated! Please log out and log back in with your new password.', { duration: 5000 });
+  };
+
   return (
     <div className="bg-white border rounded-xl p-6 space-y-6 max-w-2xl">
       <h3 className="text-[16px] mb-2" style={{ fontWeight: 600 }}>Security Settings</h3>
       <div className="space-y-4">
         <div>
           <label className="text-[13px] text-muted-foreground mb-1 block">Current Password</label>
-          <input type="password" placeholder="Enter current password" className="w-full px-3 py-2.5 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-primary/20 text-[14px]" />
+          <input
+            type="password"
+            placeholder="Enter current password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            className="w-full px-3 py-2.5 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-primary/20 text-[14px]"
+          />
         </div>
         <div>
           <label className="text-[13px] text-muted-foreground mb-1 block">New Password</label>
-          <input type="password" placeholder="Enter new password" className="w-full px-3 py-2.5 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-primary/20 text-[14px]" />
+          <input
+            type="password"
+            placeholder="Enter new password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className="w-full px-3 py-2.5 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-primary/20 text-[14px]"
+          />
         </div>
         <div>
           <label className="text-[13px] text-muted-foreground mb-1 block">Confirm New Password</label>
-          <input type="password" placeholder="Confirm new password" className="w-full px-3 py-2.5 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-primary/20 text-[14px]" />
+          <input
+            type="password"
+            placeholder="Confirm new password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full px-3 py-2.5 border rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-primary/20 text-[14px]"
+          />
         </div>
       </div>
-      <button onClick={() => toast.success('Password updated!')} className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg text-[14px]" style={{ fontWeight: 600 }}>
+      <button
+        onClick={handleUpdatePassword}
+        className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-lg text-[14px]"
+        style={{ fontWeight: 600 }}
+      >
         <Save className="w-4 h-4" /> Update Password
       </button>
     </div>

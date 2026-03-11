@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   IndianRupee, ShoppingCart, TrendingUp, Package, CreditCard, Download,
-  RotateCcw, Percent, ArrowRight
+  Percent, ArrowRight, MapPin
 } from 'lucide-react';
 import { Link, Navigate } from 'react-router';
 import { useStore } from '../store';
@@ -18,7 +18,10 @@ const STATUS_COLORS: Record<string, string> = {
 export function ShopDashboard() {
   const user = useStore((s) => s.user);
   const orders = useStore((s) => s.orders);
-  const addToCart = useStore((s) => s.addToCart);
+  const loadAllData = useStore((s) => s.loadAllData);
+
+  // Refresh data from backend every time dashboard mounts
+  useEffect(() => { loadAllData(); }, []);
 
   if (!user || user.role !== 'shopowner') {
     return <Navigate to="/login" replace />;
@@ -26,32 +29,49 @@ export function ShopDashboard() {
 
   const shopAnalytics = useMemo(() => {
     const myOrders = orders.filter((o) => o.userId === user?.id || o.userName === user?.name);
+    const activeOrders = myOrders.filter((o) => !['cancelled', 'rejected'].includes(o.status));
+    const deliveredOrders = myOrders.filter((o) => o.status === 'delivered');
+    const pendingOrders = myOrders.filter((o) => ['placed', 'accepted', 'shipped'].includes(o.status));
     const now = new Date();
     const cm = now.getMonth(), cy = now.getFullYear();
 
-    const totalSpent = myOrders.reduce((s, o) => s + o.total, 0);
-    const totalMRP = myOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + i.product.mrp * i.quantity, 0), 0);
+    const totalSpent = deliveredOrders.reduce((s, o) => s + o.total, 0);
+    const pendingValue = pendingOrders.reduce((s, o) => s + o.total, 0);
+    const totalMRP = deliveredOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + i.product.mrp * i.quantity, 0), 0);
     const totalSavings = totalMRP - totalSpent;
 
-    // Monthly spend for last 6 months
-    const monthlyData: { month: string; amount: number }[] = [];
+    // Estimated resale profit (MRP - shopPrice for delivered orders)
+    const estimatedProfit = deliveredOrders.reduce((sum, o) => {
+      return sum + o.items.reduce((s, i) => s + (i.product.mrp - i.product.shopPrice) * i.quantity, 0);
+    }, 0);
+
+    // Status counts
+    const statusCounts: Record<string, number> = {};
+    myOrders.forEach((o) => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
+
+    // Monthly spend for last 6 months — delivered + pipeline
+    const monthlyData: { month: string; delivered: number; pending: number }[] = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(cy, cm - i, 1);
       const m = d.getMonth(); const y = d.getFullYear();
-      const monthOrders = myOrders.filter((o) => { const od = new Date(o.date); return od.getMonth() === m && od.getFullYear() === y; });
-      monthlyData.push({ month: d.toLocaleDateString('en-IN', { month: 'short' }), amount: monthOrders.reduce((s, o) => s + o.total, 0) });
+      const monthOrders = myOrders.filter((o) => { const od = new Date(o.date); return od.getMonth() === m && od.getFullYear() === y && !['cancelled', 'rejected'].includes(o.status); });
+      monthlyData.push({
+        month: d.toLocaleDateString('en-IN', { month: 'short' }),
+        delivered: monthOrders.filter((o) => o.status === 'delivered').reduce((s, o) => s + o.total, 0),
+        pending: monthOrders.filter((o) => o.status !== 'delivered').reduce((s, o) => s + o.total, 0),
+      });
     }
 
     const recentOrders = [...myOrders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
 
-    return { myOrders, totalSpent, totalSavings, monthlyData, recentOrders };
+    return { myOrders, activeOrders, deliveredOrders, pendingOrders, totalSpent, pendingValue, totalSavings, estimatedProfit, statusCounts, monthlyData, recentOrders };
   }, [orders, user]);
 
   const stats = [
-    { label: 'Total Orders', value: shopAnalytics.myOrders.length.toString(), change: '', icon: ShoppingCart, color: 'bg-blue-50 text-blue-600' },
-    { label: 'Total Spent', value: shopAnalytics.totalSpent >= 100000 ? `Rs.${(shopAnalytics.totalSpent / 100000).toFixed(1)}L` : `Rs.${shopAnalytics.totalSpent.toLocaleString()}`, change: '', icon: IndianRupee, color: 'bg-primary/10 text-primary' },
-    { label: 'Total Savings', value: `Rs.${shopAnalytics.totalSavings.toLocaleString()}`, change: '', icon: TrendingUp, color: 'bg-amber-50 text-amber-600' },
-    { label: 'Credit Limit', value: `Rs.${(user?.creditLimit || 50000).toLocaleString()}`, change: 'Available', icon: CreditCard, color: 'bg-purple-50 text-purple-600' },
+    { label: 'Total Orders', value: shopAnalytics.myOrders.length.toString(), change: `${shopAnalytics.deliveredOrders.length} delivered`, icon: ShoppingCart, color: 'bg-blue-50 text-blue-600' },
+    { label: 'Total Spent', value: shopAnalytics.totalSpent >= 100000 ? `Rs.${(shopAnalytics.totalSpent / 100000).toFixed(1)}L` : `Rs.${shopAnalytics.totalSpent.toLocaleString()}`, change: shopAnalytics.pendingValue > 0 ? `Rs.${shopAnalytics.pendingValue.toLocaleString()} pending` : 'Delivered value', icon: IndianRupee, color: 'bg-primary/10 text-primary' },
+    { label: 'Wholesale Savings', value: `Rs.${shopAnalytics.totalSavings.toLocaleString()}`, change: shopAnalytics.totalSpent > 0 ? `${Math.round((shopAnalytics.totalSavings / (shopAnalytics.totalSpent + shopAnalytics.totalSavings)) * 100)}% saved` : '—', icon: TrendingUp, color: 'bg-amber-50 text-amber-600' },
+    { label: 'Est. Resale Profit', value: shopAnalytics.estimatedProfit >= 100000 ? `Rs.${(shopAnalytics.estimatedProfit / 100000).toFixed(1)}L` : `Rs.${shopAnalytics.estimatedProfit.toLocaleString()}`, change: 'MRP - wholesale', icon: CreditCard, color: 'bg-purple-50 text-purple-600' },
   ];
 
   const topProducts = FEATURED_PRODUCTS.slice(0, 4);
@@ -82,8 +102,20 @@ export function ShopDashboard() {
         ))}
       </div>
 
+      {/* Order Status Breakdown */}
+      {shopAnalytics.myOrders.length > 0 && (
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3 mb-6">
+          {([['placed', 'Placed', 'text-amber-600 bg-amber-50'], ['accepted', 'Accepted', 'text-blue-600 bg-blue-50'], ['shipped', 'Shipped', 'text-purple-600 bg-purple-50'], ['delivered', 'Delivered', 'text-primary bg-primary/10'], ['cancelled', 'Cancelled', 'text-red-500 bg-red-50'], ['rejected', 'Rejected', 'text-red-600 bg-red-50']] as const).map(([status, label, color]) => (
+            <div key={status} className={`border rounded-xl p-3 text-center ${color.split(' ')[1]}`}>
+              <p className={`text-[18px] sm:text-[22px] ${color.split(' ')[0]}`} style={{ fontWeight: 700 }}>{shopAnalytics.statusCounts[status] || 0}</p>
+              <p className="text-[11px] sm:text-[12px] text-muted-foreground">{label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Order chart */}
+        {/* Order chart - stacked delivered + pending */}
         <div className="lg:col-span-2 bg-white border rounded-xl p-4 sm:p-5">
           <h3 className="text-[15px] sm:text-[16px] mb-4" style={{ fontWeight: 600 }}>Monthly Orders Value</h3>
           <ResponsiveContainer width="100%" height={260}>
@@ -91,10 +123,15 @@ export function ShopDashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
               <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={(v) => v >= 1000 ? `${v / 1000}k` : `${v}`} />
-              <Tooltip formatter={(v: number) => [`Rs.${v.toLocaleString()}`, 'Amount']} />
-              <Bar dataKey="amount" fill="#16a34a" radius={[6, 6, 0, 0]} />
+              <Tooltip formatter={(v: number) => [`Rs.${v.toLocaleString()}`, '']} />
+              <Bar dataKey="delivered" stackId="a" fill="#16a34a" radius={[0, 0, 0, 0]} name="Delivered" />
+              <Bar dataKey="pending" stackId="a" fill="#f59e0b" radius={[6, 6, 0, 0]} name="In Progress" />
             </BarChart>
           </ResponsiveContainer>
+          <div className="flex gap-6 mt-3 justify-center text-[12px] sm:text-[13px]">
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#16a34a]" /> Delivered</div>
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#f59e0b]" /> In Progress</div>
+          </div>
         </div>
 
         {/* Quick info */}
@@ -102,7 +139,16 @@ export function ShopDashboard() {
           <h3 className="text-[15px] sm:text-[16px]" style={{ fontWeight: 600 }}>Account Info</h3>
           <div className="space-y-3 text-[13px] sm:text-[14px]">
             <div className="flex justify-between"><span className="text-muted-foreground">Shop Name</span><span style={{ fontWeight: 500 }}>{user?.shopName || '—'}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Location</span><span style={{ fontWeight: 500 }}>{user?.shopLocation || '—'}</span></div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Location</span>
+              {user?.shopLocationUrl ? (
+                <a href={user.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1" style={{ fontWeight: 500 }}>
+                  {user.shopLocation || '—'} <MapPin className="w-3 h-3" />
+                </a>
+              ) : (
+                <span style={{ fontWeight: 500 }}>{user?.shopLocation || '—'}</span>
+              )}
+            </div>
             <div className="flex justify-between"><span className="text-muted-foreground">GST</span><span style={{ fontWeight: 500 }}>{user?.gstNumber || '—'}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Status</span><span className="text-primary" style={{ fontWeight: 500 }}>Verified</span></div>
           </div>

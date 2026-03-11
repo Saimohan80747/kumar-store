@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo } from 'react';
 import { Heart, ShoppingCart, Star, Package, Bell, Plus, Minus, Tag } from 'lucide-react';
 import { Link } from 'react-router';
 import { useStore, type Product } from '../store';
@@ -28,20 +28,20 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
   const cartQty = cartItem?.quantity || 0;
 
   return (
-    <div className={`group bg-white rounded-xl border border-border hover:shadow-lg transition-all duration-300 overflow-hidden relative flex flex-col ${!isAvailable ? 'opacity-75' : ''}`}>
+    <div className={`group bg-white rounded-2xl border border-border/80 hover:border-primary/15 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 overflow-hidden relative flex flex-col card-lift shadow-premium ${!isAvailable ? 'opacity-60 grayscale-[30%]' : ''}`}>
       {/* Badges */}
       <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
         {!isAvailable && (
-          <span className="bg-gray-600 text-white text-[11px] px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>Out of Stock</span>
+          <span className="bg-gray-700/90 backdrop-blur-sm text-white text-[10px] px-2.5 py-0.5 rounded-full" style={{ fontWeight: 600 }}>Out of Stock</span>
         )}
         {product.featured && isAvailable && (
-          <span className="bg-amber-500 text-white text-[11px] px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>Featured</span>
+          <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] px-2.5 py-0.5 rounded-full shadow-sm" style={{ fontWeight: 600 }}>Featured</span>
         )}
         {isLoggedIn && discount > 0 && isAvailable && (
-          <span className="bg-primary text-white text-[11px] px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>{discount}% OFF</span>
+          <span className="bg-gradient-to-r from-primary to-emerald-500 text-white text-[10px] px-2.5 py-0.5 rounded-full shadow-sm" style={{ fontWeight: 600 }}>{discount}% OFF</span>
         )}
         {product.stock > 0 && product.stock < 50 && (
-          <span className="bg-red-500 text-white text-[11px] px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>Low Stock</span>
+          <span className="bg-gradient-to-r from-red-500 to-rose-500 text-white text-[10px] px-2.5 py-0.5 rounded-full shadow-sm animate-pulse" style={{ fontWeight: 600 }}>Low Stock</span>
         )}
       </div>
 
@@ -51,31 +51,32 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
           if (!isLoggedIn) { navigate('/login'); return; }
           toggleWishlist(product.id); toast.success(isWished ? 'Removed from wishlist' : 'Added to wishlist');
         }}
-        className="absolute top-3 right-3 z-10 p-1.5 bg-white/90 rounded-full shadow-sm hover:bg-white transition-colors"
+        className="absolute top-3 right-3 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white hover:shadow-md hover:scale-110 transition-all duration-200"
       >
         <Heart className={`w-4 h-4 ${isWished ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
       </button>
 
       {/* Image */}
       <Link to={`/product/${product.id}`} className="relative overflow-hidden">
-        <div className="aspect-square bg-gray-50 p-4 flex items-center justify-center">
-          <img src={product.image} alt={product.name} className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+        <div className="aspect-square bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100/80 p-3 flex items-center justify-center overflow-hidden shine-hover">
+          <img src={product.image} alt={product.name} className="w-full h-full object-cover rounded-xl group-hover:scale-110 transition-transform duration-700 ease-out" loading="lazy" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
       </Link>
 
       {/* Info */}
-      <div className="p-3 flex-1 flex flex-col">
-        <span className="text-[11px] text-muted-foreground uppercase tracking-wider">{product.brand}</span>
-        <Link to={`/product/${product.id}`} className="text-[14px] mt-1 line-clamp-2 hover:text-primary transition-colors" style={{ fontWeight: 500 }}>
+      <div className="p-3.5 flex-1 flex flex-col">
+        <span className="text-[10px] text-muted-foreground uppercase tracking-widest" style={{ fontWeight: 600 }}>{product.brand}</span>
+        <Link to={`/product/${product.id}`} className="text-[14px] mt-1 line-clamp-2 hover:text-primary transition-colors leading-snug" style={{ fontWeight: 500 }}>
           {product.name}
         </Link>
 
         {/* Rating */}
-        <div className="flex items-center gap-1 mt-1.5">
-          <div className="flex items-center gap-0.5 bg-primary text-white px-1.5 py-0.5 rounded text-[11px]">
+        <div className="flex items-center gap-1.5 mt-2">
+          <div className="flex items-center gap-0.5 bg-gradient-to-r from-primary to-emerald-500 text-white px-1.5 py-0.5 rounded-md text-[11px] shadow-sm">
             <Star className="w-3 h-3 fill-white" /> {product.rating}
           </div>
-          <span className="text-[12px] text-muted-foreground">({product.reviews})</span>
+          <span className="text-[11px] text-muted-foreground">({product.reviews.toLocaleString()})</span>
         </div>
 
         {/* Price */}
@@ -92,7 +93,7 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
             )}
             {priceDiff > 0 && (
               <div className="flex items-center gap-1.5 mt-1">
-                <span className="text-[12px] text-primary bg-primary/10 px-1.5 py-0.5 rounded" style={{ fontWeight: 600 }}>You save Rs.{priceDiff} ({discount}%)</span>
+                <span className="text-[11px] text-primary bg-primary/8 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>Save Rs.{priceDiff}</span>
               </div>
             )}
             {/* Show shopowner vs customer pricing comparison */}
@@ -136,7 +137,7 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
           isAvailable ? (
             cartQty > 0 ? (
               /* Increment / Decrement controls */
-              <div className="mt-3 flex items-center justify-between bg-primary/5 border border-primary/20 rounded-lg overflow-hidden">
+              <div className="mt-3 flex items-center justify-between bg-primary/5 border border-primary/20 rounded-xl overflow-hidden">
                 <button
                   onClick={() => {
                     if (cartQty <= 1) {
@@ -155,7 +156,11 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
                 </span>
                 <button
                   onClick={() => {
-                    updateCartQty(product.id, cartQty + 1);
+                    if (cartQty < product.stock) {
+                      updateCartQty(product.id, cartQty + 1);
+                    } else {
+                      toast.error(`Only ${product.stock} in stock`);
+                    }
                   }}
                   className="px-3 py-2 hover:bg-primary/10 transition-colors"
                 >
@@ -169,7 +174,8 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
                   addToCart(product, qty);
                   toast.success(`Added ${qty} ${product.unitType}(s) to cart`);
                 }}
-                className="mt-3 w-full py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-[14px]"
+                className="mt-3 w-full py-2.5 bg-primary text-white rounded-xl hover:bg-primary/90 hover:shadow-md hover:shadow-primary/25 transition-all flex items-center justify-center gap-2 text-[13px] active:scale-[0.97] btn-press"
+                style={{ fontWeight: 600 }}
               >
                 <ShoppingCart className="w-4 h-4" />
                 {isShop ? `Add ${product.minWholesaleQty} to Cart` : 'Add to Cart'}
@@ -186,7 +192,7 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
                   toast.error('Request already submitted or failed.');
                 }
               }}
-              className="mt-3 w-full py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 text-[14px]"
+              className="mt-3 w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:shadow-md hover:shadow-amber-500/20 transition-all flex items-center justify-center gap-2 text-[13px] active:scale-[0.97]"
             >
               <Bell className="w-4 h-4" />
               Request Product
@@ -195,9 +201,9 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
         ) : (
           <Link
             to="/login"
-            className="mt-3 w-full py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 text-[14px]"
+            className="mt-3 w-full py-2.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 border border-border/60 transition-all flex items-center justify-center gap-2 text-[13px] group/login"
           >
-            <ShoppingCart className="w-4 h-4" />
+            <ShoppingCart className="w-4 h-4 group-hover/login:text-primary transition-colors" />
             Login to Buy
           </Link>
         )}

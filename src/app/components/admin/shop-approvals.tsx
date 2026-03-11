@@ -1,19 +1,17 @@
 import { useState } from 'react';
 import {
   Store, CheckCircle2, XCircle, Clock, MapPin, Phone, Mail,
-  Eye, Search, Download
+  Search, Download
 } from 'lucide-react';
 import { useStore } from '../../store';
 import { toast } from 'sonner';
 
 export function AdminShopApprovals() {
   const shopRequests = useStore((s) => s.shopRequests);
-  const registeredUsers = useStore((s) => s.registeredUsers);
   const approveShop = useStore((s) => s.approveShop);
   const rejectShop = useStore((s) => s.rejectShop);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewingDetail, setViewingDetail] = useState<string | null>(null);
 
   const pending = shopRequests.filter((r) => r.status === 'pending');
   const approved = shopRequests.filter((r) => r.status === 'approved');
@@ -31,7 +29,7 @@ export function AdminShopApprovals() {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
           <Clock className="w-6 h-6 text-amber-500 mx-auto mb-2" />
           <p className="text-[28px] text-amber-700" style={{ fontWeight: 700 }}>{pending.length}</p>
@@ -56,16 +54,14 @@ export function AdminShopApprovals() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-lg text-[13px] capitalize transition-colors ${
-                filter === f ? 'bg-primary text-white' : 'bg-white border hover:bg-gray-50'
-              }`}
+              className={`px-4 py-2 rounded-lg text-[13px] capitalize transition-colors ${filter === f ? 'bg-primary text-white' : 'bg-white border hover:bg-gray-50'
+                }`}
               style={{ fontWeight: filter === f ? 600 : 400 }}
             >
               {f === 'all' ? 'All Requests' : f}
               {f === 'pending' && pending.length > 0 && (
-                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[11px] ${
-                  filter === f ? 'bg-white/20' : 'bg-amber-100 text-amber-700'
-                }`}>{pending.length}</span>
+                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[11px] ${filter === f ? 'bg-white/20' : 'bg-amber-100 text-amber-700'
+                  }`}>{pending.length}</span>
               )}
             </button>
           ))}
@@ -107,12 +103,10 @@ export function AdminShopApprovals() {
                 <div className="flex items-start justify-between flex-wrap gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                        request.status === 'pending' ? 'bg-amber-50' : request.status === 'approved' ? 'bg-primary/10' : 'bg-red-50'
-                      }`}>
-                        <Store className={`w-6 h-6 ${
-                          request.status === 'pending' ? 'text-amber-600' : request.status === 'approved' ? 'text-primary' : 'text-red-500'
-                        }`} />
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${request.status === 'pending' ? 'bg-amber-50' : request.status === 'approved' ? 'bg-primary/10' : 'bg-red-50'
+                        }`}>
+                        <Store className={`w-6 h-6 ${request.status === 'pending' ? 'text-amber-600' : request.status === 'approved' ? 'text-primary' : 'text-red-500'
+                          }`} />
                       </div>
                       <div>
                         <h4 className="text-[16px]" style={{ fontWeight: 600 }}>{request.shopName}</h4>
@@ -123,7 +117,13 @@ export function AdminShopApprovals() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
                       <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
                         <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
-                        <span>{request.shopLocation}</span>
+                        {request.shopLocationUrl ? (
+                          <a href={request.shopLocationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            {request.shopLocation}
+                          </a>
+                        ) : (
+                          <span>{request.shopLocation}</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
                         <Phone className="w-4 h-4 text-gray-400 shrink-0" />
@@ -140,13 +140,12 @@ export function AdminShopApprovals() {
                         <Clock className="w-4 h-4 text-gray-400" />
                         <span className="text-[13px] text-muted-foreground">Applied: {request.date}</span>
                       </div>
-                      <span className={`text-[11px] px-2.5 py-0.5 rounded-full capitalize ${
-                        request.status === 'pending'
-                          ? 'bg-amber-100 text-amber-700'
-                          : request.status === 'approved'
+                      <span className={`text-[11px] px-2.5 py-0.5 rounded-full capitalize ${request.status === 'pending'
+                        ? 'bg-amber-100 text-amber-700'
+                        : request.status === 'approved'
                           ? 'bg-primary/10 text-primary'
                           : 'bg-red-100 text-red-700'
-                      }`} style={{ fontWeight: 600 }}>
+                        }`} style={{ fontWeight: 600 }}>
                         {request.status}
                       </span>
                     </div>

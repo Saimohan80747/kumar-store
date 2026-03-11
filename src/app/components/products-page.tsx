@@ -180,14 +180,14 @@ export function ProductsPage() {
           <p className="text-muted-foreground text-[14px]">{filtered.length} products found</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowFilters(!showFilters)} className="lg:hidden flex items-center gap-1.5 px-3 py-2 border rounded-lg text-[14px] hover:bg-gray-50">
+          <button onClick={() => setShowFilters(!showFilters)} className="lg:hidden flex items-center gap-1.5 px-3 py-2 border border-border/80 rounded-xl text-[14px] hover:bg-gray-50 transition-colors">
             <SlidersHorizontal className="w-4 h-4" />
             Filters {activeFilters > 0 && <span className="bg-primary text-white text-[11px] w-5 h-5 rounded-full flex items-center justify-center">{activeFilters}</span>}
           </button>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="px-3 py-2 border rounded-lg text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="px-3 py-2 border border-border/80 rounded-xl text-[14px] bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             <option value="featured">Featured</option>
             <option value="price-low">Price: Low to High</option>
@@ -195,9 +195,9 @@ export function ProductsPage() {
             <option value="rating">Highest Rated</option>
             <option value="popular">Most Popular</option>
           </select>
-          <div className="hidden sm:flex items-center border rounded-lg overflow-hidden">
-            <button onClick={() => setGridView(true)} className={`p-2 ${gridView ? 'bg-primary text-white' : 'hover:bg-gray-50'}`}><Grid3X3 className="w-4 h-4" /></button>
-            <button onClick={() => setGridView(false)} className={`p-2 ${!gridView ? 'bg-primary text-white' : 'hover:bg-gray-50'}`}><List className="w-4 h-4" /></button>
+          <div className="hidden sm:flex items-center border border-border/80 rounded-xl overflow-hidden">
+            <button onClick={() => setGridView(true)} className={`p-2 transition-colors ${gridView ? 'bg-primary text-white' : 'hover:bg-gray-50'}`}><Grid3X3 className="w-4 h-4" /></button>
+            <button onClick={() => setGridView(false)} className={`p-2 transition-colors ${!gridView ? 'bg-primary text-white' : 'hover:bg-gray-50'}`}><List className="w-4 h-4" /></button>
           </div>
         </div>
       </div>
@@ -223,7 +223,7 @@ export function ProductsPage() {
       <div className="flex gap-6">
         {/* Desktop sidebar */}
         <div className="hidden lg:block w-64 shrink-0">
-          <div className="sticky top-40 bg-white border rounded-xl p-5">
+          <div className="sticky top-40 bg-white border border-border/80 rounded-2xl p-5 shadow-sm">
             <FilterSidebar
               activeFilters={activeFilters}
               clearFilters={clearFilters}
@@ -241,7 +241,7 @@ export function ProductsPage() {
         {showFilters && (
           <>
             <div className="fixed inset-0 bg-black/40 z-50 lg:hidden" onClick={() => setShowFilters(false)} />
-            <div className="fixed left-0 top-0 bottom-0 w-80 bg-white z-50 p-6 overflow-y-auto lg:hidden">
+            <div className="fixed left-0 top-0 bottom-0 w-80 bg-white z-50 p-6 overflow-y-auto lg:hidden shadow-2xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[18px]" style={{ fontWeight: 600 }}>Filters</h3>
                 <button onClick={() => setShowFilters(false)}><X className="w-5 h-5" /></button>
@@ -264,10 +264,10 @@ export function ProductsPage() {
         <div className="flex-1">
           {filtered.length === 0 ? (
             <div className="text-center py-20">
-              <Filter className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <Filter className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
               <h3 className="text-[18px]" style={{ fontWeight: 600 }}>No products found</h3>
               <p className="text-muted-foreground mt-1 text-[14px]">Try adjusting your filters or search query</p>
-              <button onClick={clearFilters} className="mt-4 px-6 py-2 bg-primary text-white rounded-lg text-[14px]">Clear Filters</button>
+              <button onClick={clearFilters} className="mt-4 px-6 py-2.5 bg-primary text-white rounded-xl text-[14px] hover:shadow-md hover:shadow-primary/25 transition-all">Clear Filters</button>
             </div>
           ) : (
             <div className={gridView ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4' : 'space-y-3'}>

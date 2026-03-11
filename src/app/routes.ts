@@ -1,7 +1,8 @@
-import { lazy } from 'react';
+import { lazy, createElement } from 'react';
 import { createBrowserRouter } from 'react-router';
 import { Layout } from './components/layout';
 import { HomePage } from './components/home-page';
+import { GlobalErrorBoundary } from './components/error-boundary';
 
 // Lazy-loaded storefront pages (only loaded when the user navigates to them)
 const ProductsPage = lazy(() => import('./components/products-page').then(m => ({ default: m.ProductsPage })));
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     Component: Layout,
+    errorElement: createElement(GlobalErrorBoundary),
     children: [
       { index: true, Component: HomePage },
       { path: 'products', Component: ProductsPage },
@@ -52,6 +54,7 @@ export const router = createBrowserRouter([
   {
     path: '/admin',
     Component: AdminLayout,
+    errorElement: createElement(GlobalErrorBoundary),
     children: [
       { index: true, Component: AdminOverview },
       { path: 'orders', Component: AdminOrders },

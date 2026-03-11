@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Bell, CheckCircle2, XCircle, Clock, Package, Search, Download,
-  User, Mail, Store, Filter
+  User, Mail, Store
 } from 'lucide-react';
 import { useStore } from '../../store';
 import { toast } from 'sonner';
@@ -39,7 +39,7 @@ export function AdminProductRequests() {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
           <Bell className="w-6 h-6 text-amber-500 mx-auto mb-2" />
           <p className="text-[28px] text-amber-700" style={{ fontWeight: 700 }}>{pending.length}</p>
@@ -64,16 +64,14 @@ export function AdminProductRequests() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-lg text-[13px] capitalize transition-colors ${
-                filter === f ? 'bg-primary text-white' : 'bg-white border hover:bg-gray-50'
-              }`}
+              className={`px-4 py-2 rounded-lg text-[13px] capitalize transition-colors ${filter === f ? 'bg-primary text-white' : 'bg-white border hover:bg-gray-50'
+                }`}
               style={{ fontWeight: filter === f ? 600 : 400 }}
             >
               {f === 'all' ? 'All Requests' : f}
               {f === 'pending' && pending.length > 0 && (
-                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[11px] ${
-                  filter === f ? 'bg-white/20' : 'bg-amber-100 text-amber-700'
-                }`}>{pending.length}</span>
+                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[11px] ${filter === f ? 'bg-white/20' : 'bg-amber-100 text-amber-700'
+                  }`}>{pending.length}</span>
               )}
             </button>
           ))}
@@ -134,9 +132,8 @@ export function AdminProductRequests() {
                 {requests.map((request) => (
                   <div key={request.id} className="p-4 flex items-center justify-between flex-wrap gap-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                        request.userRole === 'shopowner' ? 'bg-purple-50' : 'bg-blue-50'
-                      }`}>
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center ${request.userRole === 'shopowner' ? 'bg-purple-50' : 'bg-blue-50'
+                        }`}>
                         {request.userRole === 'shopowner' ? (
                           <Store className={`w-4 h-4 text-purple-600`} />
                         ) : (
@@ -146,9 +143,8 @@ export function AdminProductRequests() {
                       <div>
                         <p className="text-[14px]" style={{ fontWeight: 500 }}>
                           {request.userName}
-                          <span className={`ml-2 text-[11px] px-2 py-0.5 rounded-full ${
-                            request.userRole === 'shopowner' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'
-                          }`}>
+                          <span className={`ml-2 text-[11px] px-2 py-0.5 rounded-full ${request.userRole === 'shopowner' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'
+                            }`}>
                             {request.userRole === 'shopowner' ? 'Shop Owner' : 'Customer'}
                           </span>
                         </p>
@@ -188,9 +184,8 @@ export function AdminProductRequests() {
                           </button>
                         </>
                       ) : (
-                        <span className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] ${
-                          request.status === 'fulfilled' ? 'bg-primary/5 text-primary' : 'bg-red-50 text-red-500'
-                        }`} style={{ fontWeight: 600 }}>
+                        <span className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] ${request.status === 'fulfilled' ? 'bg-primary/5 text-primary' : 'bg-red-50 text-red-500'
+                          }`} style={{ fontWeight: 600 }}>
                           {request.status === 'fulfilled' ? (
                             <><CheckCircle2 className="w-4 h-4" /> Fulfilled</>
                           ) : (

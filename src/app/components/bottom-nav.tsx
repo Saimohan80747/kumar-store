@@ -31,8 +31,8 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-50 safe-area-bottom">
-      <div className="flex items-center justify-around h-14">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-2xl border-t border-border/40 z-50 safe-area-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
+      <div className="flex items-center justify-around h-16">
         {NAV_ITEMS.map((item) => {
           const isActive = item.path === '/'
             ? location.pathname === '/'
@@ -43,12 +43,15 @@ export function BottomNav() {
             <Link
               key={item.path}
               to={getPath(item)}
-              className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-[48px] transition-colors ${
-                isActive ? 'text-primary' : 'text-muted-foreground'
+              className={`flex flex-col items-center justify-center gap-1 flex-1 h-full min-w-[48px] transition-all duration-200 relative ${
+                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
+              {isActive && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
+              )}
               <div className="relative">
-                <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                <Icon className={`w-5 h-5 ${isActive ? 'drop-shadow-sm' : ''}`} strokeWidth={isActive ? 2.5 : 1.8} />
                 {item.badge && cartCount > 0 && (
                   <span className="absolute -top-1.5 -right-2.5 w-4 h-4 bg-primary text-white text-[9px] rounded-full flex items-center justify-center" style={{ fontWeight: 700 }}>
                     {cartCount > 99 ? '99' : cartCount}

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 export function LoginPage() {
   const login = useStore((s) => s.login);
-  const authenticateUser = useStore((s) => s.authenticateUser);
+  const loginWithGoogle = useStore((s) => s.loginWithGoogle);
   const navigate = useNavigate();
   const [role, setRole] = useState<'customer' | 'shopowner'>('customer');
   const [email, setEmail] = useState('');
@@ -34,31 +34,32 @@ export function LoginPage() {
 
     setLoading(true);
     try {
-      const result = await authenticateUser(email.trim(), password, role);
+      const result = await login(email.trim(), password);
 
-      if (result.success && result.user) {
-        login(result.user);
-        toast.success(result.message);
+      if (result.success) {
+        toast.success("Signed in successfully!");
         if (role === 'shopowner') {
           navigate('/shop-dashboard');
         } else {
           navigate('/');
         }
       } else {
-        if (result.message.includes('pending')) {
-          setErrorType('pending');
-        } else if (result.message.includes('rejected')) {
-          setErrorType('rejected');
-        } else {
-          setErrorType('error');
-        }
-        setError(result.message);
+        setErrorType('error');
+        setError(result.error || 'Login failed');
       }
     } catch (err) {
       setError('Network error. Please try again.');
       setErrorType('error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await loginWithGoogle();
+    } catch (err: any) {
+      toast.error(err.message || 'Google sign in failed');
     }
   };
 
@@ -77,19 +78,23 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center py-10 px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-[85vh] flex items-center justify-center py-10 px-4 relative overflow-hidden">
+      {/* Animated gradient orbs */}
+      <div className="orb orb-primary w-96 h-96 -top-32 -right-32 animate-float-slow" />
+      <div className="orb orb-emerald w-72 h-72 -bottom-24 -left-24 animate-float-slow" style={{ animationDelay: '2s' }} />
+      <div className="orb orb-teal w-56 h-56 top-1/3 -right-16 animate-float-slow" style={{ animationDelay: '4s' }} />
+      <div className="w-full max-w-md relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
+          <div className="w-16 h-16 bg-gradient-to-br from-primary to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow glow-primary animate-float">
             <Store className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-[30px]" style={{ fontWeight: 800 }}>Welcome Back</h1>
-          <p className="text-muted-foreground mt-1 text-[15px]">Sign in to your Kumar Store account</p>
+          <h1 className="text-[30px]" style={{ fontWeight: 800, letterSpacing: '-0.02em' }}>Welcome Back</h1>
+          <p className="text-muted-foreground mt-1.5 text-[15px]">Sign in to your Kumar Store account</p>
         </div>
 
         {/* Role Tabs */}
-        <div className="bg-gray-100 rounded-xl p-1 grid grid-cols-2 gap-1 mb-6">
+        <div className="bg-gray-100 rounded-2xl p-1.5 grid grid-cols-2 gap-1 mb-6">
           {([
             { id: 'customer' as const, label: 'Customer', icon: User, desc: 'Shop at MRP prices' },
             { id: 'shopowner' as const, label: 'Shop Owner', icon: Store, desc: 'Wholesale pricing' },
@@ -97,11 +102,10 @@ export function LoginPage() {
             <button
               key={r.id}
               onClick={() => { setRole(r.id); setError(''); setErrorType(''); setEmail(''); setPassword(''); }}
-              className={`relative p-3.5 rounded-lg text-center transition-all duration-200 ${
-                role === r.id
-                  ? 'bg-white shadow-sm'
-                  : 'hover:bg-gray-50'
-              }`}
+              className={`relative p-3.5 rounded-xl text-center transition-all duration-200 ${role === r.id
+                ? 'bg-white shadow-sm'
+                : 'hover:bg-gray-50'
+                }`}
             >
               <div className="flex items-center justify-center gap-2">
                 <r.icon className={`w-4.5 h-4.5 ${role === r.id ? 'text-primary' : 'text-gray-400'}`} />
@@ -119,13 +123,12 @@ export function LoginPage() {
 
         {/* Error/Status Messages */}
         {error && (
-          <div className={`mb-4 p-4 rounded-xl flex items-start gap-3 text-[14px] animate-in slide-in-from-top-2 duration-200 ${
-            errorType === 'pending'
-              ? 'bg-amber-50 border border-amber-200 text-amber-800'
-              : errorType === 'rejected'
+          <div className={`mb-4 p-4 rounded-xl flex items-start gap-3 text-[14px] animate-in slide-in-from-top-2 duration-200 ${errorType === 'pending'
+            ? 'bg-amber-50 border border-amber-200 text-amber-800'
+            : errorType === 'rejected'
               ? 'bg-red-50 border border-red-200 text-red-800'
               : 'bg-red-50 border border-red-200 text-red-700'
-          }`}>
+            }`}>
             {errorType === 'pending' ? (
               <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
             ) : errorType === 'rejected' ? (
@@ -146,13 +149,12 @@ export function LoginPage() {
         )}
 
         {/* Login Form */}
-        <form onSubmit={handleLogin} className="bg-white border rounded-2xl p-6 space-y-5 shadow-sm">
+        <form onSubmit={handleLogin} className="bg-white/90 backdrop-blur-xl border border-border/80 rounded-2xl p-6 space-y-5 shadow-premium-lg">
           {/* Email */}
           <div>
             <label className="text-[13px] text-muted-foreground mb-1.5 block" style={{ fontWeight: 500 }}>Email Address</label>
-            <div className={`flex items-center border rounded-xl overflow-hidden transition-all duration-200 ${
-              email ? 'border-primary/40 bg-primary/[0.02]' : 'bg-gray-50'
-            } focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary`}>
+            <div className={`flex items-center border rounded-xl overflow-hidden transition-all duration-200 focus-glow ${email ? 'border-primary/30 bg-primary/[0.02]' : 'bg-gray-50'
+              } focus-within:border-primary/50`}>
               <Mail className={`w-4 h-4 ml-3.5 ${email ? 'text-primary' : 'text-muted-foreground'}`} />
               <input
                 type="email"
@@ -175,9 +177,8 @@ export function LoginPage() {
               <label className="text-[13px] text-muted-foreground" style={{ fontWeight: 500 }}>Password</label>
               <button type="button" className="text-[12px] text-primary hover:underline" style={{ fontWeight: 500 }}>Forgot password?</button>
             </div>
-            <div className={`flex items-center border rounded-xl overflow-hidden transition-all duration-200 ${
-              password ? 'border-primary/40 bg-primary/[0.02]' : 'bg-gray-50'
-            } focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary`}>
+            <div className={`flex items-center border rounded-xl overflow-hidden transition-all duration-200 focus-glow ${password ? 'border-primary/30 bg-primary/[0.02]' : 'bg-gray-50'
+              } focus-within:border-primary/50`}>
               <Lock className={`w-4 h-4 ml-3.5 ${password ? 'text-primary' : 'text-muted-foreground'}`} />
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -206,7 +207,7 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-gradient-to-r from-primary to-primary/90 text-white rounded-xl hover:from-primary/90 hover:to-primary/80 transition-all flex items-center justify-center gap-2.5 text-[15px] disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 active:scale-[0.99]"
+            className="w-full py-3.5 bg-gradient-to-r from-primary to-emerald-600 text-white rounded-xl hover:from-primary/90 hover:to-emerald-600/90 transition-all flex items-center justify-center gap-2.5 text-[15px] disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 active:scale-[0.99] btn-press"
             style={{ fontWeight: 600 }}
           >
             {loading ? (
@@ -220,6 +221,30 @@ export function LoginPage() {
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
+          </button>
+
+          {/* Google SSO Divider */}
+          <div className="flex items-center gap-3 mt-4 mb-4">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-[12px] text-muted-foreground">or continue with</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* Google Button */}
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="w-full py-3 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center gap-2.5 text-[14px] disabled:opacity-70 disabled:cursor-not-allowed shadow-sm active:scale-[0.99] mb-4"
+            style={{ fontWeight: 500 }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+            </svg>
+            Google
           </button>
 
           {/* Divider */}

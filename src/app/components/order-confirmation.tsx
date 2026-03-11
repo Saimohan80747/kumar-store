@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Order } from '../store';
+import { useStore } from '../store';
 
 interface OrderConfirmationProps {
   order: Order;
@@ -67,6 +68,7 @@ export function OrderConfirmation({ order, deliveryAddress, deliverySlot }: Orde
   const [currentStep, setCurrentStep] = useState(0);
   const [showConfetti, setShowConfetti] = useState(true);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const getPrice = useStore((s) => s.getPrice);
 
   useEffect(() => {
     // Auto-advance steps with delays
@@ -250,13 +252,12 @@ export function OrderConfirmation({ order, deliveryAddress, deliverySlot }: Orde
                       scale: isCompleted || isActive ? 1 : 0.8,
                     }}
                     transition={{ type: 'spring', delay: isActive ? 0.3 : 0 }}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 border-2 transition-all duration-500 ${
-                      isCompleted
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 border-2 transition-all duration-500 ${isCompleted
                         ? 'bg-primary border-primary text-white'
                         : isActive
                           ? 'bg-primary/10 border-primary text-primary'
                           : 'bg-gray-50 border-gray-200 text-gray-300'
-                    }`}
+                      }`}
                   >
                     {isCompleted ? (
                       <CheckCircle2 className="w-5 h-5" />
@@ -330,7 +331,13 @@ export function OrderConfirmation({ order, deliveryAddress, deliverySlot }: Orde
           <div className="space-y-3 text-[13px]">
             <div>
               <p className="text-muted-foreground mb-0.5">Address</p>
-              <p style={{ fontWeight: 500 }}>{deliveryAddress}</p>
+              {order.deliveryLocationUrl ? (
+                <a href={order.deliveryLocationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1" style={{ fontWeight: 500 }}>
+                  {deliveryAddress} <MapPin className="w-3 h-3" />
+                </a>
+              ) : (
+                <p style={{ fontWeight: 500 }}>{deliveryAddress}</p>
+              )}
             </div>
             <div>
               <p className="text-muted-foreground mb-0.5">Delivery Slot</p>
@@ -364,19 +371,25 @@ export function OrderConfirmation({ order, deliveryAddress, deliverySlot }: Orde
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Items Total</span>
-              <span>Rs.{order.total.toLocaleString()}</span>
+              <span>Rs.{(order.total - (order.deliveryFee || 0)).toLocaleString()}</span>
             </div>
+            {order.couponDiscount && order.couponDiscount > 0 && (
+              <div className="flex justify-between text-primary">
+                <span>Coupon ({order.couponCode})</span>
+                <span>-Rs.{order.couponDiscount.toLocaleString()}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Delivery</span>
               <span className="text-primary" style={{ fontWeight: 500 }}>
-                {order.total > 999 ? 'FREE' : 'Rs.49'}
+                {(order.deliveryFee || 0) === 0 ? 'FREE' : `Rs.${order.deliveryFee}`}
               </span>
             </div>
             <hr className="my-1" />
             <div className="flex justify-between text-[16px]">
               <span style={{ fontWeight: 700 }}>Total Paid</span>
               <span className="text-primary" style={{ fontWeight: 700 }}>
-                Rs.{(order.total + (order.total > 999 ? 0 : 49)).toLocaleString()}
+                Rs.{order.total.toLocaleString()}
               </span>
             </div>
           </div>
@@ -411,7 +424,7 @@ export function OrderConfirmation({ order, deliveryAddress, deliverySlot }: Orde
                 </p>
               </div>
               <span className="text-[14px] shrink-0" style={{ fontWeight: 600 }}>
-                Rs.{(item.product.mrp * item.quantity).toLocaleString()}
+                Rs.{(getPrice(item.product) * item.quantity).toLocaleString()}
               </span>
             </div>
           ))}

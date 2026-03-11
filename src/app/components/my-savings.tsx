@@ -11,10 +11,15 @@ export function MySavings() {
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== 'customer') return <Navigate to="/" replace />;
 
-  // Compute savings from real order data
+  // Compute savings from real delivered order data
   const savingsData = useMemo(() => {
+    // Broad matching: match by userId, userName, or email
     const userOrders = orders.filter(
-      (o) => o.userName === user.name || o.userRole === 'customer'
+      (o) => o.status === 'delivered' && (
+        o.userId === user.id ||
+        (o.userName === user.name && o.userRole === 'customer') ||
+        (user.email && o.userId && o.userId === user.id)
+      )
     );
 
     let lifetimeSavings = 0;
@@ -41,14 +46,20 @@ export function MySavings() {
     }[] = [];
 
     userOrders.forEach((order) => {
-      // Retail total = sum of MRP × quantity
-      const retailTotal = order.items.reduce(
-        (sum, item) => sum + (item.product?.mrp || 0) * item.quantity,
-        0
-      );
-      // final_paid_amount is order.total (which already has discounts/coupons applied)
-      const finalPaid = order.total;
-      const savings = Math.max(0, retailTotal - finalPaid);
+      // Per-item savings: (MRP - customerPrice) × quantity
+      let itemSavings = 0;
+      let retailTotal = 0;
+      order.items.forEach((item) => {
+        const mrp = Number(item.product?.mrp) || 0;
+        const custPrice = Number(item.product?.customerPrice ?? (item.product as any)?.customer_price ?? item.price ?? mrp) || 0;
+        const qty = Number(item.quantity) || 0;
+        retailTotal += mrp * qty;
+        itemSavings += Math.max(0, (mrp - custPrice) * qty);
+      });
+
+      // Fallback: if per-item savings is 0 but MRP total > paid total, use the difference
+      const finalPaid = Number(order.total) || 0;
+      const savings = itemSavings > 0 ? itemSavings : Math.max(0, retailTotal - finalPaid);
 
       lifetimeSavings += savings;
 
@@ -66,10 +77,10 @@ export function MySavings() {
       tableRows.push({
         orderId: order.id,
         date: order.date,
-        itemsCount: order.items.reduce((sum, i) => sum + i.quantity, 0),
-        retailTotal,
-        finalPaid,
-        savings,
+        itemsCount: order.items.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0),
+        retailTotal: Math.round(retailTotal),
+        finalPaid: Math.round(finalPaid),
+        savings: Math.round(savings),
       });
     });
 
@@ -77,11 +88,11 @@ export function MySavings() {
 
     const chartData = Array.from(monthlyMap.entries()).map(([month, savings]) => ({
       month,
-      savings,
+      savings: Math.round(savings),
     }));
 
-    return { lifetimeSavings, monthSavings, avgPerOrder, chartData, tableRows, totalOrders: userOrders.length };
-  }, [orders, user.name]);
+    return { lifetimeSavings: Math.round(lifetimeSavings), monthSavings: Math.round(monthSavings), avgPerOrder, chartData, tableRows, totalOrders: userOrders.length };
+  }, [orders, user.id, user.name, user.email]);
 
   const summaryCards = [
     {

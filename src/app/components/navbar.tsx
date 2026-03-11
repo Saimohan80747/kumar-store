@@ -2,11 +2,15 @@ import { useState, memo, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
   Search, ShoppingCart, Heart, User, Menu, X, Package,
-  ChevronDown, LogOut, Store, MapPin, Bell, CheckCheck, TrendingUp
+  ChevronDown, LogOut, Store, MapPin, Bell, CheckCheck, TrendingUp,
+  Mic
 } from 'lucide-react';
 import { useStore } from '../store';
+import { SarvamService } from '../services/sarvam';
 import type { Notification } from '../store';
 import { CATEGORIES } from '../data';
+import { toast } from 'sonner';
+import stringSimilarity from 'string-similarity';
 
 // ─── Notification Dropdown (memoized sub-component) ───
 const NotificationDropdown = memo(function NotificationDropdown({
@@ -23,8 +27,8 @@ const NotificationDropdown = memo(function NotificationDropdown({
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-border z-50 overflow-hidden">
-        <div className="px-4 py-3 bg-gray-50 border-b flex items-center justify-between">
+      <div className="absolute right-0 top-full mt-2.5 w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.12)] border border-border/60 z-50 overflow-hidden">
+        <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-50/50 border-b border-border/60 flex items-center justify-between">
           <p className="text-[14px]" style={{ fontWeight: 600 }}>Notifications</p>
           {unreadCount > 0 && (
             <button
@@ -52,14 +56,12 @@ const NotificationDropdown = memo(function NotificationDropdown({
                     onClose();
                   }
                 }}
-                className={`w-full text-left px-4 py-3 border-b last:border-0 hover:bg-gray-50 transition-colors ${
-                  !n.read ? 'bg-amber-50/50' : ''
-                }`}
+                className={`w-full text-left px-4 py-3 border-b last:border-0 hover:bg-gray-50 transition-colors ${!n.read ? 'bg-amber-50/50' : ''
+                  }`}
               >
                 <div className="flex gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                    n.type === 'product_available' ? 'bg-primary/10' : 'bg-amber-50'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${n.type === 'product_available' ? 'bg-primary/10' : 'bg-amber-50'
+                    }`}>
                     {n.type === 'product_available' ? (
                       <Package className="w-4 h-4 text-primary" />
                     ) : (
@@ -95,28 +97,31 @@ const UserDropdown = memo(function UserDropdown({ onClose }: { onClose: () => vo
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-border z-50 py-1 overflow-hidden">
+      <div className="absolute right-0 top-full mt-2.5 w-60 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.12)] border border-border/60 z-50 py-1 overflow-hidden">
         {user ? (
           <>
-            <div className="px-4 py-3 bg-gray-50 border-b">
+            <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-50/50 border-b border-border/60">
               <p className="text-[14px]" style={{ fontWeight: 600 }}>{user.name}</p>
               <p className="text-[12px] text-muted-foreground">{user.email}</p>
-              <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] bg-primary/10 text-primary capitalize">{user.role === 'shopowner' ? 'Shop Owner' : 'Customer'}</span>
+              <span className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] bg-gradient-to-r from-primary/10 to-emerald-500/10 text-primary border border-primary/15 capitalize" style={{ fontWeight: 600 }}>
+                {user.role === 'shopowner' ? 'Shop Owner' : user.role === 'admin' ? 'Admin' : 'Customer'}
+              </span>
             </div>
             {user.role === 'shopowner' && (
-              <Link to="/shop-dashboard" onClick={onClose} className="flex items-center gap-2 px-4 py-2.5 hover:bg-gray-50 text-[14px]">
-                <Store className="w-4 h-4" /> Shop Dashboard
+              <Link to="/shop-dashboard" onClick={onClose} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-primary/5 text-[14px] transition-colors">
+                <Store className="w-4 h-4 text-muted-foreground" /> Shop Dashboard
               </Link>
             )}
-            <Link to="/orders" onClick={onClose} className="flex items-center gap-2 px-4 py-2.5 hover:bg-gray-50 text-[14px]">
-              <Package className="w-4 h-4" /> My Orders
+            <Link to="/orders" onClick={onClose} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-primary/5 text-[14px] transition-colors">
+              <Package className="w-4 h-4 text-muted-foreground" /> My Orders
             </Link>
             {user.role === 'customer' && (
-              <Link to="/savings" onClick={onClose} className="flex items-center gap-2 px-4 py-2.5 hover:bg-gray-50 text-[14px]">
-                <TrendingUp className="w-4 h-4" /> My Savings
+              <Link to="/savings" onClick={onClose} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-primary/5 text-[14px] transition-colors">
+                <TrendingUp className="w-4 h-4 text-muted-foreground" /> My Savings
               </Link>
             )}
-            <button onClick={() => { logout(); onClose(); navigate('/'); }} className="flex items-center gap-2 px-4 py-2.5 hover:bg-gray-50 text-[14px] w-full text-destructive">
+            <div className="mx-3 my-1 h-px bg-border/60" />
+            <button onClick={() => { logout(); onClose(); navigate('/'); }} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-red-50 text-[14px] w-full text-destructive transition-colors">
               <LogOut className="w-4 h-4" /> Sign Out
             </button>
           </>
@@ -151,16 +156,16 @@ const CategoryBar = memo(function CategoryBar() {
             {catDropdown && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setCatDropdown(false)} />
-                <div className="absolute left-0 top-full w-60 bg-white shadow-xl rounded-b-lg border z-50">
+                <div className="absolute left-0 top-full w-64 bg-white/95 backdrop-blur-xl shadow-[0_16px_48px_rgba(0,0,0,0.12)] rounded-b-2xl rounded-t-none border border-border/60 z-50 py-1 overflow-hidden">
                   {CATEGORIES.map((cat) => (
                     <Link
                       key={cat.slug}
                       to={`/products?category=${cat.slug}`}
                       onClick={() => setCatDropdown(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-[14px] transition-colors"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-primary/5 text-[14px] transition-colors group/cat"
                     >
-                      <span className="text-[18px]">{cat.icon}</span>
-                      {cat.name}
+                      <span className="text-[18px] group-hover/cat:scale-110 transition-transform">{cat.icon}</span>
+                      <span className="group-hover/cat:text-primary transition-colors">{cat.name}</span>
                     </Link>
                   ))}
                 </div>
@@ -171,7 +176,7 @@ const CategoryBar = memo(function CategoryBar() {
             <Link
               key={item}
               to="/products"
-              className="px-3 py-2.5 text-[14px] text-gray-600 hover:text-primary transition-colors"
+              className="relative px-3 py-2.5 text-[14px] text-gray-600 hover:text-primary transition-colors after:absolute after:bottom-0 after:left-3 after:right-3 after:h-0.5 after:bg-primary after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left"
             >
               {item}
             </Link>
@@ -197,6 +202,8 @@ export function Navbar() {
   const setSearchQuery = useStore((s) => s.setSearchQuery);
   const notifications = useStore((s) => s.notifications);
 
+  const products = useStore((s) => s.products);
+
   const [mobileMenu, setMobileMenu] = useState(false);
   const [userDropdown, setUserDropdown] = useState(false);
   const [notifDropdown, setNotifDropdown] = useState(false);
@@ -204,23 +211,132 @@ export function Navbar() {
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: BlobPart[] = [];
+
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/wav' });
+        setIsRecording(false);
+        toast.info('Processing voice...');
+        try {
+          const result = await SarvamService.speechToText(audioBlob);
+          let finalQuery = result.transcript.trim();
+
+          // Improved algorithm for string matching
+          if (finalQuery) {
+            const cleanQuery = finalQuery.toLowerCase().replace(/[^\w\s]/g, '').trim();
+            if (cleanQuery) {
+              const targets = Array.from(new Set([
+                ...products.map(p => p.name),
+                ...products.map(p => p.category.replace('-', ' ')),
+                ...products.map(p => p.brand)
+              ])).filter(Boolean);
+
+              const lowerTargets = targets.map(t => t.toLowerCase().replace(/[^\w\s]/g, '').trim());
+
+              let bestMatch = '';
+              let highestScore = 0;
+
+              for (let i = 0; i < lowerTargets.length; i++) {
+                const t = lowerTargets[i];
+                if (!t) continue;
+
+                // Exact match
+                if (t === cleanQuery) {
+                  bestMatch = targets[i];
+                  highestScore = 1;
+                  break;
+                }
+
+                // Word boundary check (e.g. 'Apple' in 'buy an apple phone')
+                try {
+                  const regex = new RegExp(`\\b${t}\\b`, 'i');
+                  if (regex.test(cleanQuery)) {
+                    const score = 0.8 + (t.length / 100);
+                    if (score > highestScore) {
+                      highestScore = score;
+                      bestMatch = targets[i];
+                    }
+                  } else if (t.includes(cleanQuery) && cleanQuery.length > 2) {
+                    // Target contains query (e.g. 'apple' matches 'apple iphone')
+                    const score = 0.7 + (cleanQuery.length / t.length) * 0.1;
+                    if (score > highestScore) {
+                      highestScore = score;
+                      bestMatch = targets[i];
+                    }
+                  }
+                } catch {
+                  // Ignore regex compilation errors for weird strings
+                }
+              }
+
+              // Fallback to fuzzy matching for typos
+              if (highestScore < 0.8) {
+                const match = stringSimilarity.findBestMatch(cleanQuery, lowerTargets);
+                const threshold = cleanQuery.length <= 4 ? 0.3 : 0.4;
+                if (match.bestMatch.rating >= threshold && match.bestMatch.rating > highestScore) {
+                  bestMatch = targets[match.bestMatchIndex];
+                }
+              }
+
+              finalQuery = bestMatch || cleanQuery;
+            }
+          }
+
+          setSearchQuery(finalQuery);
+
+          if (finalQuery) {
+            toast.success(`Search set to: "${finalQuery}"`);
+            navigate('/products');
+          } else {
+            toast.error("Didn't catch that. Please try again.");
+          }
+        } catch (err: any) {
+          toast.error(err.message || 'STT failed');
+        }
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      toast.info('Listening... Speak now.');
+    } catch (err) {
+      toast.error('Microphone access denied');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      mediaRecorder.stream.getTracks().forEach(t => t.stop());
+      setMediaRecorder(null);
+    }
+  };
+
   const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) navigate('/products');
   }, [searchQuery, navigate]);
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-border">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl shadow-sm border-b border-border/60 glass-tinted">
       {/* Top bar */}
-      <div className="bg-primary text-primary-foreground">
-        <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-between text-[13px]">
+      <div className="bg-gradient-to-r from-primary via-primary to-emerald-600 text-primary-foreground">
+        <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-between text-[12px]">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Deliver to all India</span>
             <span className="hidden sm:block">Free delivery on orders above Rs.999</span>
           </div>
           <div className="flex items-center gap-4">
             {user?.role === 'shopowner' && (
-              <span className="bg-white/20 rounded-full px-3 py-0.5 text-[12px]">Wholesale Account</span>
+              <span className="bg-white/20 rounded-full px-3 py-0.5 text-[11px]" style={{ fontWeight: 500 }}>✦ Wholesale Account</span>
             )}
             <span className="hidden sm:block">24/7 Support: 1800-123-4567</span>
           </div>
@@ -231,19 +347,19 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center gap-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
+          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-emerald-600 rounded-xl flex items-center justify-center shadow-md shadow-primary/20 group-hover:shadow-lg group-hover:shadow-primary/30 transition-all duration-300 glow-primary shine-hover group-hover:scale-105">
               <Store className="w-5 h-5 text-white" />
             </div>
             <div className="hidden sm:block">
-              <span className="text-[20px] text-primary" style={{ fontWeight: 700 }}>Kumar Store</span>
-              <span className="block text-[11px] text-muted-foreground -mt-1">Wholesale & Retail</span>
+              <span className="text-[20px] text-gradient-primary" style={{ fontWeight: 800 }}>Kumar Store</span>
+              <span className="block text-[10px] text-muted-foreground -mt-1 tracking-wider uppercase" style={{ fontWeight: 500 }}>Wholesale & Retail</span>
             </div>
           </Link>
 
           {/* Search */}
           <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
-            <div className="flex items-center bg-gray-50 border border-border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
+            <div className="flex items-center bg-gray-50/80 border border-border/70 rounded-xl overflow-hidden focus-within:border-primary/40 transition-all focus-glow">
               <input
                 type="text"
                 placeholder="Search for products, brands, categories..."
@@ -251,8 +367,15 @@ export function Navbar() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 px-4 py-2.5 bg-transparent outline-none text-[14px]"
               />
-              <button type="submit" className="px-4 py-2.5 bg-primary text-white hover:bg-primary/90 transition-colors">
-                <Search className="w-5 h-5" />
+              <button
+                type="button"
+                onClick={isRecording ? stopRecording : startRecording}
+                className={`px-3 py-2.5 transition-all ${isRecording ? 'text-primary animate-pulse' : 'text-gray-400 hover:text-primary'}`}
+              >
+                <Mic className="w-5 h-5" />
+              </button>
+              <button type="submit" className="px-4 py-2.5 bg-primary text-white hover:bg-primary/90 transition-all rounded-r-lg btn-press">
+                <Search className="w-4.5 h-4.5" />
               </button>
             </div>
           </form>
@@ -264,11 +387,11 @@ export function Navbar() {
               <div className="relative">
                 <button
                   onClick={() => { setNotifDropdown(!notifDropdown); setUserDropdown(false); }}
-                  className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors hidden sm:flex items-center"
+                  className="relative p-2.5 hover:bg-primary/5 rounded-xl transition-colors hidden sm:flex items-center"
                 >
-                  <Bell className="w-5 h-5 text-gray-600" />
+                  <Bell className="w-5 h-5 text-gray-600 group-hover:text-primary transition-colors" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-amber-500 text-white text-[11px] rounded-full flex items-center justify-center animate-pulse">{unreadCount}</span>
+                    <span key={unreadCount} className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-amber-500 text-white text-[11px] rounded-full flex items-center justify-center badge-bounce shadow-sm">{unreadCount}</span>
                   )}
                 </button>
                 {notifDropdown && (
@@ -281,26 +404,26 @@ export function Navbar() {
               </div>
             )}
 
-            <Link to="/wishlist" className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors hidden sm:flex items-center gap-1.5">
-              <Heart className="w-5 h-5 text-gray-600" />
+            <Link to="/wishlist" className="relative p-2.5 hover:bg-primary/5 rounded-xl transition-colors hidden sm:flex items-center gap-1.5 group btn-press">
+              <Heart className="w-5 h-5 text-gray-600 group-hover:text-primary transition-colors" />
               {wishlistLength > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-primary text-white text-[11px] rounded-full flex items-center justify-center">{wishlistLength}</span>
+                <span key={wishlistLength} className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-primary text-white text-[11px] rounded-full flex items-center justify-center badge-bounce shadow-sm">{wishlistLength}</span>
               )}
             </Link>
 
-            <Link to="/cart" className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-1.5">
-              <ShoppingCart className="w-5 h-5 text-gray-600" />
+            <Link to="/cart" className="relative p-2.5 hover:bg-primary/5 rounded-xl transition-colors flex items-center gap-1.5 group btn-press">
+              <ShoppingCart className="w-5 h-5 text-gray-600 group-hover:text-primary transition-colors" />
               {cartLength > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-primary text-white text-[11px] rounded-full flex items-center justify-center">{cartLength}</span>
+                <span key={cartLength} className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-primary text-white text-[11px] rounded-full flex items-center justify-center badge-bounce shadow-sm">{cartLength}</span>
               )}
-              <span className="hidden md:block text-[13px] text-gray-700">Cart</span>
+              <span className="hidden md:block text-[13px] text-gray-700 group-hover:text-primary transition-colors">Cart</span>
             </Link>
 
             {/* User */}
             <div className="relative">
               <button
                 onClick={() => { setUserDropdown(!userDropdown); setNotifDropdown(false); }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-1.5"
+                className="p-2.5 hover:bg-primary/5 rounded-xl transition-colors flex items-center gap-1.5"
               >
                 <User className="w-5 h-5 text-gray-600" />
                 <span className="hidden md:block text-[13px] text-gray-700 max-w-[100px] truncate">
@@ -313,7 +436,7 @@ export function Navbar() {
               )}
             </div>
 
-            <button onClick={() => setMobileMenu(!mobileMenu)} className="p-2 hover:bg-gray-100 rounded-lg md:hidden">
+            <button onClick={() => setMobileMenu(!mobileMenu)} className="p-2.5 hover:bg-primary/5 rounded-xl md:hidden transition-colors">
               {mobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>

@@ -92,6 +92,7 @@ function orderToFrontend(row: any) {
     id: row.id,
     items: row.items || [],
     total: Number(row.total),
+    deliveryFee: row.delivery_fee != null ? Number(row.delivery_fee) : 0,
     status: row.status,
     date: row.order_date,
     paymentMethod: row.payment_method,
@@ -108,6 +109,7 @@ function orderToDB(order: any) {
     user_role: order.userRole,
     items: order.items || [],
     total: order.total,
+    delivery_fee: order.deliveryFee ?? 0,
     status: order.status,
     payment_method: order.paymentMethod,
     order_date: order.date,
@@ -787,6 +789,150 @@ app.put(`${PREFIX}/product-requests/:id`, async (c) => {
   } catch (err) {
     console.log("Error updating product request:", err);
     return c.json({ error: `Update failed: ${err}` }, 500);
+  }
+});
+
+// ─── PRODUCTS ───
+
+function productToFrontend(row: any) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    brand: row.brand,
+    description: row.description || '',
+    image: row.image || '',
+    mrp: Number(row.mrp),
+    purchasePrice: Number(row.purchase_price),
+    shopPrice: Number(row.shop_price),
+    customerPrice: Number(row.customer_price),
+    minWholesaleQty: row.min_wholesale_qty || 1,
+    stock: row.stock || 0,
+    sku: row.sku,
+    unitType: row.unit_type || 'Piece',
+    featured: row.featured || false,
+    rating: Number(row.rating) || 0,
+    reviews: row.reviews || 0,
+  };
+}
+
+function productToDB(product: any) {
+  return {
+    id: product.id,
+    name: product.name,
+    category: product.category,
+    brand: product.brand,
+    description: product.description || '',
+    image: product.image || '',
+    mrp: product.mrp,
+    purchase_price: product.purchasePrice,
+    shop_price: product.shopPrice,
+    customer_price: product.customerPrice,
+    min_wholesale_qty: product.minWholesaleQty || 1,
+    stock: product.stock || 0,
+    sku: product.sku,
+    unit_type: product.unitType || 'Piece',
+    featured: product.featured || false,
+    rating: product.rating || 0,
+    reviews: product.reviews || 0,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+app.get(`${PREFIX}/products`, async (c) => {
+  try {
+    const db = supabase();
+    const { data, error } = await db
+      .from("kumar_products")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.log("Error fetching products:", error);
+      return c.json({ error: `Failed to fetch products: ${error.message}` }, 500);
+    }
+    return c.json((data || []).map(productToFrontend));
+  } catch (err) {
+    console.log("Error fetching products:", err);
+    return c.json({ error: `Failed to fetch products: ${err}` }, 500);
+  }
+});
+
+app.post(`${PREFIX}/products`, async (c) => {
+  try {
+    const product = await c.req.json();
+    const db = supabase();
+    const { error } = await db.from("kumar_products").insert(productToDB(product));
+    if (error) {
+      console.log("Error creating product:", error);
+      return c.json({ error: `Product creation failed: ${error.message}` }, 500);
+    }
+    return c.json({ success: true, product });
+  } catch (err) {
+    console.log("Error creating product:", err);
+    return c.json({ error: `Product creation failed: ${err}` }, 500);
+  }
+});
+
+app.put(`${PREFIX}/products/:id`, async (c) => {
+  try {
+    const id = c.req.param("id");
+    const updates = await c.req.json();
+    const db = supabase();
+
+    const dbUpdates: any = { updated_at: new Date().toISOString() };
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.category !== undefined) dbUpdates.category = updates.category;
+    if (updates.brand !== undefined) dbUpdates.brand = updates.brand;
+    if (updates.description !== undefined) dbUpdates.description = updates.description;
+    if (updates.image !== undefined) dbUpdates.image = updates.image;
+    if (updates.mrp !== undefined) dbUpdates.mrp = updates.mrp;
+    if (updates.purchasePrice !== undefined) dbUpdates.purchase_price = updates.purchasePrice;
+    if (updates.shopPrice !== undefined) dbUpdates.shop_price = updates.shopPrice;
+    if (updates.customerPrice !== undefined) dbUpdates.customer_price = updates.customerPrice;
+    if (updates.minWholesaleQty !== undefined) dbUpdates.min_wholesale_qty = updates.minWholesaleQty;
+    if (updates.stock !== undefined) dbUpdates.stock = updates.stock;
+    if (updates.sku !== undefined) dbUpdates.sku = updates.sku;
+    if (updates.unitType !== undefined) dbUpdates.unit_type = updates.unitType;
+    if (updates.featured !== undefined) dbUpdates.featured = updates.featured;
+    if (updates.rating !== undefined) dbUpdates.rating = updates.rating;
+    if (updates.reviews !== undefined) dbUpdates.reviews = updates.reviews;
+
+    const { data, error } = await db
+      .from("kumar_products")
+      .update(dbUpdates)
+      .eq("id", id)
+      .select("*")
+      .maybeSingle();
+
+    if (error) {
+      console.log("Error updating product:", error);
+      return c.json({ error: `Product update failed: ${error.message}` }, 500);
+    }
+    if (!data) {
+      return c.json({ error: "Product not found" }, 404);
+    }
+    return c.json({ success: true, product: productToFrontend(data) });
+  } catch (err) {
+    console.log("Error updating product:", err);
+    return c.json({ error: `Product update failed: ${err}` }, 500);
+  }
+});
+
+app.delete(`${PREFIX}/products/:id`, async (c) => {
+  try {
+    const id = c.req.param("id");
+    const db = supabase();
+    const { error } = await db.from("kumar_products").delete().eq("id", id);
+    if (error) {
+      console.log("Error deleting product:", error);
+      return c.json({ error: `Product deletion failed: ${error.message}` }, 500);
+    }
+    return c.json({ success: true });
+  } catch (err) {
+    console.log("Error deleting product:", err);
+    return c.json({ error: `Product deletion failed: ${err}` }, 500);
   }
 });
 

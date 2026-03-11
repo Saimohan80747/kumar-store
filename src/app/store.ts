@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as api from './api';
-import { products as allProducts } from './data';
+import { products as seedProducts } from './data';
+import { supabase } from './services/supabase';
 
 export type UserRole = 'customer' | 'shopowner' | 'admin';
 
@@ -14,10 +15,15 @@ export interface User {
   address?: string;
   shopName?: string;
   shopLocation?: string;
+  shopLocationUrl?: string; // Google Maps Location Link
   gstNumber?: string;
   approved?: boolean;
+  blocked?: boolean;
   creditLimit?: number;
   profit?: number;
+  totalSavings?: number;
+  totalProfit?: number;
+  language?: string;
 }
 
 export interface ShopRequest {
@@ -27,9 +33,11 @@ export interface ShopRequest {
   phone: string;
   shopName: string;
   shopLocation: string;
+  shopLocationUrl?: string; // Google Maps Location Link
   password: string;
   status: 'pending' | 'approved' | 'rejected';
   date: string;
+  language?: string;
 }
 
 export interface Product {
@@ -55,6 +63,7 @@ export interface Product {
 export interface CartItem {
   product: Product;
   quantity: number;
+  price?: number;
 }
 
 export type OrderStatus = 'placed' | 'accepted' | 'rejected' | 'cancelled' | 'shipped' | 'delivered';
@@ -63,15 +72,26 @@ export interface Order {
   id: string;
   items: CartItem[];
   total: number;
+  deliveryFee: number;
   status: OrderStatus;
   date: string;
   paymentMethod: string;
   userRole: UserRole;
   userName: string;
   userId?: string;
+  deliveryAddress?: string;
+  deliveryLocationUrl?: string; // Google Maps Location Link
+  deliverySlot?: string;
   couponCode?: string;
   couponDiscount?: number;
+  adminProfit?: number;
+  shopProfit?: number;
+  customerSavings?: number;
 }
+
+/** Delivery fee threshold: orders above this amount get free delivery */
+export const FREE_DELIVERY_THRESHOLD = 999;
+export const DELIVERY_FEE = 49;
 
 export interface InventoryLedger {
   id: string;
@@ -115,6 +135,7 @@ interface AppState {
   user: User | null;
   registeredUsers: User[];
   shopRequests: ShopRequest[];
+  products: Product[];
   cart: CartItem[];
   wishlist: string[];
   orders: Order[];
@@ -126,38 +147,48 @@ interface AppState {
   recentlyViewed: string[];
   dbReady: boolean;
   dbLoading: boolean;
+  users: User[];
 
   // Init
   initDB: () => Promise<void>;
   loadAllData: () => Promise<void>;
-  restoreSession: () => void;
+  initAuth: () => void;
 
   // Auth
-  login: (user: User) => void;
-  logout: () => void;
-  registerCustomer: (user: Omit<User, 'id' | 'role'>) => Promise<void>;
-  registerShopOwner: (request: Omit<ShopRequest, 'id' | 'status' | 'date'>) => Promise<void>;
-  authenticateUser: (email: string, password: string, role: UserRole) => Promise<{ success: boolean; message: string; user?: User }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  registerCustomer: (user: Omit<User, 'id' | 'role'>) => Promise<{ success: boolean; error?: string }>;
+  registerShopOwner: (request: Omit<ShopRequest, 'id' | 'status' | 'date'>) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<void>;
 
   // Admin
   approveShop: (requestId: string) => Promise<void>;
   rejectShop: (requestId: string) => Promise<void>;
+  toggleBlockUser: (userId: string, blocked: boolean) => Promise<void>;
 
   // Cart
   addToCart: (product: Product, qty?: number) => void;
   removeFromCart: (productId: string) => void;
   updateCartQty: (productId: string, qty: number) => void;
   clearCart: () => void;
+  loadCart: () => Promise<void>;
 
   // Wishlist
   toggleWishlist: (productId: string) => void;
 
   // Orders
-  placeOrder: (paymentMethod: string, couponCode?: string, couponDiscount?: number) => Promise<void>;
+  placeOrder: (paymentMethod: string, deliveryFee: number, deliveryAddress?: string, deliveryLocationUrl?: string, couponCode?: string, couponDiscount?: number) => Promise<void>;
   acceptOrder: (orderId: string) => { success: boolean; message: string };
   rejectOrder: (orderId: string) => void;
   cancelOrder: (orderId: string) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
+  setOrders: (orders: Order[]) => void;
+
+  // Products (admin CRUD)
+  loadProducts: () => Promise<void>;
+  addProduct: (product: Product) => Promise<void>;
+  editProduct: (id: string, updates: Partial<Product>) => Promise<void>;
+  deleteProductById: (id: string) => Promise<void>;
 
   // Product Requests
   requestProduct: (productId: string, productName: string) => Promise<void>;
@@ -179,12 +210,46 @@ interface AppState {
   // Pricing
   getPrice: (product: Product) => number;
   getCartTotal: () => number;
+  getRealTimeStats: () => {
+    totalOrders: number;
+    placedOrders: number;
+    acceptedOrders: number;
+    shippedOrders: number;
+    deliveredOrders: number;
+    cancelledOrders: number;
+    rejectedOrders: number;
+    totalRevenue: number;
+    pipelineValue: number;
+    todayRevenue: number;
+    averageOrderValue: number;
+    totalCustomers: number;
+    activeCustomers: number;
+    returningCustomers: number;
+    customerRetentionRate: number;
+    totalShopOwners: number;
+    activeShopOwners: number;
+    totalAdminProfit: number;
+    totalAdminProfitFromCustomers: number;
+    totalAdminProfitFromShops: number;
+    totalShopProfit: number;
+    totalCustomerSavings: number;
+    totalProducts: number;
+    lowStockProducts: number;
+    outOfStockProducts: number;
+    todayOrders: number;
+    todayPlacedOrders: number;
+    todayDeliveredOrders: number;
+    monthlyGrowth: number;
+    orderCompletionRate: number;
+  };
 }
 
 export const useStore = create<AppState>((set, get) => ({
   user: null,
   registeredUsers: [],
+  users: [],
   shopRequests: [],
+  products: [...seedProducts],
   cart: [],
   wishlist: [],
   orders: [],
@@ -198,7 +263,71 @@ export const useStore = create<AppState>((set, get) => ({
   dbLoading: false,
 
   // ─── Initialize database & load data ───
+  initAuth: () => {
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const u = session.user;
+        const meta = u.user_metadata || {};
+        // Lookup the user in registeredUsers to retain backend/admin properties (like approved, creditLimit)
+        // If they don't exist yet, fallback to meta properties
+        const existingUser = get().registeredUsers.find(ru => ru.id === u.id || ru.email === u.email);
+
+        set({
+          user: {
+            id: u.id,
+            email: u.email!,
+            name: meta.full_name || meta.name || existingUser?.name || 'User',
+            phone: meta.phone || existingUser?.phone || '',
+            role: meta.role || existingUser?.role || 'customer',
+            address: meta.address || existingUser?.address,
+            shopName: meta.shopName || existingUser?.shopName,
+            shopLocation: meta.shopLocation || existingUser?.shopLocation,
+            shopLocationUrl: meta.shopLocationUrl || existingUser?.shopLocationUrl,
+            approved: existingUser?.approved ?? meta.approved,
+            blocked: existingUser?.blocked ?? meta.blocked,
+            gstNumber: meta.gstNumber || existingUser?.gstNumber,
+            creditLimit: existingUser?.creditLimit ?? meta.creditLimit
+          }
+        });
+      } else {
+        set({ user: null });
+      }
+    });
+
+    // Listen to changes (login/logout/refresh)
+    supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const u = session.user;
+        const meta = u.user_metadata || {};
+        const existingUser = get().registeredUsers.find(ru => ru.id === u.id || ru.email === u.email);
+
+        set({
+          user: {
+            id: u.id,
+            email: u.email!,
+            name: meta.full_name || meta.name || existingUser?.name || 'User',
+            phone: meta.phone || existingUser?.phone || '',
+            role: meta.role || existingUser?.role || 'customer',
+            address: meta.address || existingUser?.address,
+            shopName: meta.shopName || existingUser?.shopName,
+            shopLocation: meta.shopLocation || existingUser?.shopLocation,
+            shopLocationUrl: meta.shopLocationUrl || existingUser?.shopLocationUrl,
+            approved: existingUser?.approved ?? meta.approved,
+            blocked: existingUser?.blocked ?? meta.blocked,
+            gstNumber: meta.gstNumber || existingUser?.gstNumber,
+            creditLimit: existingUser?.creditLimit ?? meta.creditLimit
+          }
+        });
+      } else {
+        set({ user: null });
+        set({ cart: [], wishlist: [], orders: [] });
+      }
+    });
+  },
+
   initDB: async () => {
+    get().initAuth();
     if (get().dbReady || get().dbLoading) return;
     set({ dbLoading: true });
     try {
@@ -225,88 +354,122 @@ export const useStore = create<AppState>((set, get) => ({
 
   loadAllData: async () => {
     try {
-      const [users, shopRequests, orders, productRequests] = await Promise.all([
+      const [users, shopRequests, rawOrders, productRequests, dbProducts] = await Promise.all([
         api.getUsers(),
         api.getShopRequests(),
         api.getOrders(),
         api.getProductRequests().catch(() => []),
+        api.getProducts().catch(() => []),
       ]);
-      set({ registeredUsers: users, shopRequests, orders, productRequests });
+      // Normalize orders — ensure deliveryFee exists for older DB records
+      // Filter out test orders that may be in the database
+      const orders = (rawOrders || [])
+        .filter((o: any) => !o.id?.startsWith?.('ORD-TEST'))
+        .map((o: any) => ({
+          ...o,
+          deliveryFee: Number(o.deliveryFee) || 0,
+        }));
+      // Use DB products if available, otherwise keep seed data
+      const products = (dbProducts && dbProducts.length > 0) ? dbProducts : [...seedProducts];
+      set({ registeredUsers: users, shopRequests, orders, productRequests, products });
     } catch (err) {
       console.error('Error loading data:', err);
     }
   },
 
-  restoreSession: () => {
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
-    if (user) {
-      set({ user });
-      // Load notifications from DB for this user
-      api.getNotifications(user.id)
-        .then((notifs) => set({ notifications: notifs }))
-        .catch(() => { /* ignore */ });
-    }
+  // ─── Auth actions (Supabase) ───
+  login: async (email, password) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
   },
 
-  // ─── Auth ───
-  login: (user) => {
-    set({ user });
-    localStorage.setItem('user', JSON.stringify(user));
-    // Load notifications from DB for this user on login
-    api.getNotifications(user.id)
-      .then((notifs) => set({ notifications: notifs }))
-      .catch(() => set({ notifications: [] }));
-  },
-  logout: () => {
-    set({ user: null, cart: [], wishlist: [], notifications: [] });
-    localStorage.removeItem('user');
+  loginWithGoogle: async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
   },
 
-  registerCustomer: async (userData) => {
-    const newUser: User = {
-      id: `cust-${Date.now()}`,
-      ...userData,
-      role: 'customer',
-    };
-    try {
-      await api.createUser(newUser);
-      set({ registeredUsers: [...get().registeredUsers, newUser] });
-    } catch (err) {
-      console.error('Register customer error:', err);
-      throw err;
+  logout: async () => {
+    await supabase.auth.signOut();
+  },
+
+  registerCustomer: async (payload) => {
+    const { data: authData, error } = await supabase.auth.signUp({
+      email: payload.email,
+      password: payload.password!,
+      options: {
+        data: {
+          name: payload.name,
+          phone: payload.phone,
+          address: payload.address,
+          role: 'customer'
+        }
+      }
+    });
+    if (error) return { success: false, error: error.message };
+
+    if (authData.user) {
+      try {
+        await api.createUser({
+          id: authData.user.id,
+          email: payload.email,
+          name: payload.name,
+          phone: payload.phone,
+          address: payload.address,
+          role: 'customer',
+          date: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error('Failed to sync customer to backend:', err);
+      }
     }
+    return { success: true };
   },
 
   registerShopOwner: async (request) => {
-    const newRequest: ShopRequest = {
-      id: `sr-${Date.now()}`,
-      ...request,
-      status: 'pending',
-      date: new Date().toISOString().split('T')[0],
-    };
-    try {
-      await api.createShopRequest(newRequest);
-      set({ shopRequests: [...get().shopRequests, newRequest] });
-    } catch (err) {
-      console.error('Register shop owner error:', err);
-      throw err;
-    }
-  },
+    const { data: authData, error } = await supabase.auth.signUp({
+      email: request.email,
+      password: request.password,
+      options: {
+        data: {
+          name: request.name,
+          phone: request.phone,
+          shopName: request.shopName,
+          shopLocation: request.shopLocation,
+          shopLocationUrl: request.shopLocationUrl,
+          role: 'shopowner',
+          approved: false
+        }
+      }
+    });
+    if (error) return { success: false, error: error.message };
 
-  authenticateUser: async (email, password, role) => {
-    try {
-      const result = await api.loginUser(email, password, role);
-      return result;
-    } catch (err) {
-      console.error('Auth error:', err);
-      return { success: false, message: 'Network error. Please try again.' };
+    if (authData.user) {
+      try {
+        await api.createShopRequest({
+          id: authData.user.id,
+          name: request.name,
+          email: request.email,
+          phone: request.phone,
+          shopName: request.shopName,
+          shopLocation: request.shopLocation,
+          shopLocationUrl: request.shopLocationUrl,
+          status: 'pending',
+          date: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error('Failed to sync shop request to backend:', err);
+      }
     }
+    return { success: true };
   },
 
   // ─── Admin actions ───
   approveShop: async (requestId) => {
     try {
-      const { request: updated, newUser } = await api.approveShopRequest(requestId);
+      const { newUser } = await api.approveShopRequest(requestId);
       set({
         shopRequests: get().shopRequests.map((r) =>
           r.id === requestId ? { ...r, status: 'approved' as const } : r
@@ -331,23 +494,60 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
+  // ─── Admin: Block/Unblock User ───
+  toggleBlockUser: async (userId: string, blocked: boolean) => {
+    try {
+      const { registeredUsers } = get();
+      const updatedUsers = registeredUsers.map((u) =>
+        u.id === userId ? { ...u, blocked } : u
+      );
+      set({ registeredUsers: updatedUsers });
+
+      // Update in database via API
+      const userToUpdate = updatedUsers.find((u) => u.id === userId);
+      if (userToUpdate) {
+        await api.updateUser(userId, { blocked });
+      }
+    } catch (err) {
+      console.error('Toggle block user error:', err);
+    }
+  },
+
   // ─── Cart ───
   addToCart: (product, qty = 1) => {
-    const { cart } = get();
+    const { cart, user } = get();
     const existing = cart.find((i) => i.product.id === product.id);
+    const currentQty = existing ? existing.quantity : 0;
+    // Clamp to available stock
+    const maxAdd = Math.max(0, product.stock - currentQty);
+    if (maxAdd <= 0 && product.stock > 0) {
+      // Already at stock limit
+      return;
+    }
+    const safeQty = product.stock > 0 ? Math.min(qty, maxAdd) : qty; // If stock is 0 data, allow (out-of-stock handled in UI)
+    let newCart: CartItem[];
     if (existing) {
-      set({
-        cart: cart.map((i) =>
-          i.product.id === product.id ? { ...i, quantity: i.quantity + qty } : i
-        ),
-      });
+      newCart = cart.map((i) =>
+        i.product.id === product.id ? { ...i, quantity: i.quantity + safeQty } : i
+      );
     } else {
-      set({ cart: [...cart, { product, quantity: qty }] });
+      newCart = [...cart, { product, quantity: safeQty }];
+    }
+    set({ cart: newCart });
+    // Persist to Supabase
+    if (user) {
+      const newItem = newCart.find((i) => i.product.id === product.id);
+      api.upsertCartItem(user.id, product.id, newItem?.quantity || safeQty).catch(console.error);
     }
   },
 
   removeFromCart: (productId) => {
+    const { user } = get();
     set({ cart: get().cart.filter((i) => i.product.id !== productId) });
+    // Persist to Supabase
+    if (user) {
+      api.removeCartItem(user.id, productId).catch(console.error);
+    }
   },
 
   updateCartQty: (productId, qty) => {
@@ -355,14 +555,50 @@ export const useStore = create<AppState>((set, get) => ({
       get().removeFromCart(productId);
       return;
     }
+    // Clamp to available stock
+    const item = get().cart.find((i) => i.product.id === productId);
+    const maxQty = item ? item.product.stock : qty;
+    const safeQty = Math.min(qty, maxQty);
     set({
       cart: get().cart.map((i) =>
-        i.product.id === productId ? { ...i, quantity: qty } : i
+        i.product.id === productId ? { ...i, quantity: safeQty } : i
       ),
     });
+    // Persist to Supabase
+    const { user } = get();
+    if (user) {
+      api.upsertCartItem(user.id, productId, safeQty).catch(console.error);
+    }
   },
 
-  clearCart: () => set({ cart: [] }),
+  clearCart: () => {
+    const { user } = get();
+    set({ cart: [] });
+    // Persist to Supabase
+    if (user) {
+      api.clearCartItems(user.id).catch(console.error);
+    }
+  },
+
+  loadCart: async () => {
+    const { user, products } = get();
+    if (!user) return;
+    try {
+      const items = await api.getCartItems(user.id);
+      // Build a product lookup from current products state
+      const productMap = new Map(products.map((p) => [p.id, p]));
+      const cart: CartItem[] = [];
+      for (const item of items) {
+        const product = productMap.get(item.product_id);
+        if (product) {
+          cart.push({ product, quantity: item.quantity });
+        }
+      }
+      set({ cart });
+    } catch (err) {
+      console.error('Load cart error:', err);
+    }
+  },
 
   // ─── Wishlist ───
   toggleWishlist: (productId) => {
@@ -375,30 +611,41 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   // ─── Orders ───
-  placeOrder: async (paymentMethod, couponCode, couponDiscount) => {
+  placeOrder: async (paymentMethod, deliveryFee, deliveryAddress, deliveryLocationUrl, couponCode, couponDiscount) => {
     const { cart, user, orders } = get();
-    const total = get().getCartTotal();
-    // Apply coupon discount if present
-    const finalTotal = couponDiscount ? Math.max(0, total - couponDiscount) : total;
+    const subtotal = get().getCartTotal();
+    // Apply coupon discount if present, then add delivery fee
+    const discountedSubtotal = couponDiscount ? Math.max(0, subtotal - couponDiscount) : subtotal;
+    const finalTotal = discountedSubtotal + deliveryFee;
     const order: Order = {
-      id: `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 15).toUpperCase()}`,
       items: [...cart],
       total: finalTotal,
+      deliveryFee,
       status: 'placed', // PLACED — no stock change
       date: new Date().toISOString().split('T')[0],
       paymentMethod,
       userRole: user?.role || 'customer',
       userName: user?.name || 'Guest',
       userId: user?.id,
+      deliveryAddress: deliveryAddress || undefined,
+      deliveryLocationUrl: deliveryLocationUrl || undefined,
       couponCode: couponCode || undefined,
       couponDiscount: couponDiscount || undefined,
     };
     try {
       await api.createOrder(order);
+      // Save cart items to kumar_cart table
+      await api.createCartItems(order.id, order.items).catch((err) => {
+        console.error('Failed to save cart items:', err);
+      });
       set({ orders: [order, ...orders], cart: [] });
+      // Clear cart from Supabase
+      if (user) api.clearCartItems(user.id).catch(console.error);
     } catch (err) {
       console.error('Place order error:', err);
       set({ orders: [order, ...orders], cart: [] });
+      if (user) api.clearCartItems(user.id).catch(console.error);
     }
   },
 
@@ -409,7 +656,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (!order || order.status !== 'placed') return { success: false, message: 'Order cannot be accepted' };
 
     // Check stock sufficiency for ALL items first (atomic check)
-    const productMap = new Map(allProducts.map((p) => [p.id, p]));
+    const productMap = new Map(get().products.map((p) => [p.id, p]));
 
     for (const item of order.items) {
       const prod = productMap.get(item.product.id);
@@ -466,18 +713,20 @@ export const useStore = create<AppState>((set, get) => ({
     api.updateOrder(orderId, { status: 'rejected' }).catch(console.error);
   },
 
-  // Cancel order → restore stock if it was ACCEPTED
+  // Cancel order → restore stock if it was ACCEPTED (not shipped — shipped orders can't be cancelled)
   cancelOrder: (orderId) => {
     const { orders, inventoryLedger } = get();
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
+    // Only allow cancellation for placed or accepted orders
+    if (order.status !== 'placed' && order.status !== 'accepted') return;
 
-    const wasAccepted = order.status === 'accepted' || order.status === 'shipped';
+    const wasAccepted = order.status === 'accepted';
     const newLedgerEntries: InventoryLedger[] = [];
 
     if (wasAccepted) {
-      // Restore stock safely
-      const productMap = new Map(allProducts.map((p) => [p.id, p]));
+      // Restore stock safely using current products state
+      const productMap = new Map(get().products.map((p) => [p.id, p]));
       const now = new Date().toISOString();
 
       for (const item of order.items) {
@@ -508,16 +757,139 @@ export const useStore = create<AppState>((set, get) => ({
     api.updateOrder(orderId, { status: 'cancelled' }).catch(console.error);
   },
 
+  // Set orders (for real-time sync)
+  setOrders: (orders) => set({ orders }),
+
   // Generic status update (for ship / deliver)
   updateOrderStatus: async (orderId, status) => {
-    const { orders } = get();
+    const { orders, users } = get();
+    const order = orders.find((o) => o.id === orderId);
+
+    if (!order) return;
+
+    // Calculate profits and savings when order is delivered
+    if (status === 'delivered' && !order.adminProfit) {
+      let adminProfit = 0;
+      let shopProfit = 0;
+      let customerSavings = 0;
+
+      order.items.forEach((item) => {
+        const product = item.product;
+        const quantity = item.quantity;
+
+        // Calculate per-item profits and savings
+        const mrp = product.mrp;
+        const purchasePrice = product.purchasePrice;
+        const shopPrice = product.shopPrice;
+        const customerPrice = product.customerPrice;
+
+        // Admin profit: (shopPrice - purchasePrice) + (customerPrice - purchasePrice)
+        const itemAdminProfit = (shopPrice - purchasePrice) + (customerPrice - purchasePrice);
+        adminProfit += itemAdminProfit * quantity;
+
+        // Shop profit: MRP - shopPrice
+        const itemShopProfit = mrp - shopPrice;
+        shopProfit += itemShopProfit * quantity;
+
+        // Customer savings: MRP - customerPrice
+        const itemCustomerSavings = mrp - customerPrice;
+        customerSavings += itemCustomerSavings * quantity;
+      });
+
+      // Update order with calculated profits
+      const updatedOrder = {
+        ...order,
+        status,
+        adminProfit,
+        shopProfit,
+        customerSavings
+      };
+
+      // Update user totals
+      const updatedUsers = users.map((user) => {
+        if (user.id === order.userId) {
+          const currentSavings = user.totalSavings || 0;
+          const currentProfit = user.totalProfit || 0;
+
+          return {
+            ...user,
+            totalSavings: user.role === 'customer' ? currentSavings + customerSavings : currentSavings,
+            totalProfit: user.role === 'shopowner' ? currentProfit + shopProfit : currentProfit,
+          };
+        }
+        return user;
+      });
+
+      set({
+        orders: orders.map((o) => (o.id === orderId ? updatedOrder : o)),
+        users: updatedUsers,
+      });
+
+      // Persist to database
+      try {
+        await api.updateOrder(orderId, { status, adminProfit, shopProfit, customerSavings });
+        // TODO: Add user update API call when available
+      } catch (err) {
+        console.error('Update order status error:', err);
+      }
+    } else {
+      // Regular status update without profit calculation
+      set({
+        orders: orders.map((o) => (o.id === orderId ? { ...o, status } : o)),
+      });
+      try {
+        await api.updateOrder(orderId, { status });
+      } catch (err) {
+        console.error('Update order status error:', err);
+      }
+    }
+  },
+
+  // ─── Products (admin CRUD) ───
+  loadProducts: async () => {
+    try {
+      const dbProducts = await api.getProducts();
+      if (dbProducts && dbProducts.length > 0) {
+        set({ products: dbProducts });
+      }
+    } catch (err) {
+      console.error('Load products error:', err);
+    }
+  },
+
+  addProduct: async (product) => {
+    try {
+      await api.createProduct(product);
+      set({ products: [product, ...get().products] });
+    } catch (err) {
+      console.error('Add product error:', err);
+      // Still update local state so the UI is responsive even if network fails
+      set({ products: [product, ...get().products] });
+    }
+  },
+
+  editProduct: async (id, updates) => {
+    const existing = get().products.find((p) => p.id === id);
+    if (!existing) return;
+    const updated: Product = { ...existing, ...updates };
     set({
-      orders: orders.map((o) => (o.id === orderId ? { ...o, status } : o)),
+      products: get().products.map((p) => (p.id === id ? updated : p)),
     });
     try {
-      await api.updateOrder(orderId, { status });
+      await api.updateProduct(id, updates);
     } catch (err) {
-      console.error('Update order status error:', err);
+      console.error('Edit product error:', err);
+    }
+  },
+
+  deleteProductById: async (id) => {
+    set({
+      products: get().products.filter((p) => p.id !== id),
+    });
+    try {
+      await api.deleteProduct(id);
+    } catch (err) {
+      console.error('Delete product error:', err);
     }
   },
 
@@ -675,5 +1047,160 @@ export const useStore = create<AppState>((set, get) => ({
     const { cart } = get();
     const getPrice = get().getPrice;
     return cart.reduce((sum, item) => sum + getPrice(item.product) * item.quantity, 0);
+  },
+
+  getRealTimeStats: () => {
+    const { orders, products, users } = get();
+
+    // Order status counts
+    const placedOrders = orders.filter((o: Order) => o.status === 'placed');
+    const acceptedOrders = orders.filter((o: Order) => o.status === 'accepted');
+    const shippedOrders = orders.filter((o: Order) => o.status === 'shipped');
+    const deliveredOrders = orders.filter((o: Order) => o.status === 'delivered');
+    const cancelledOrders = orders.filter((o: Order) => o.status === 'cancelled');
+    const rejectedOrders = orders.filter((o: Order) => o.status === 'rejected');
+
+    // Revenue calculations
+    const totalRevenue = deliveredOrders.reduce((sum: number, o: Order) => sum + o.total, 0);
+    const pipelineValue = (placedOrders.length + acceptedOrders.length + shippedOrders.length) *
+      deliveredOrders.reduce((avg: number, o: Order) => avg + o.total, 0) / Math.max(1, deliveredOrders.length);
+
+    // Customer metrics
+    const totalCustomers = new Set(orders.map((o: Order) => o.userId).filter(Boolean)).size;
+    const activeCustomers = new Set(orders.filter((o: Order) => ['placed', 'accepted', 'shipped'].includes(o.status)).map((o: Order) => o.userId).filter(Boolean)).size;
+    const returningCustomers = new Set(
+      orders.filter((o: Order) => o.status === 'delivered' && o.userId)
+        .map((o: Order) => o.userId)
+        .filter((userId: string | undefined) => userId && orders.filter((ord: Order) => ord.userId === userId && ord.status === 'delivered').length > 1)
+    ).size;
+
+    // Shop owner metrics
+    const shopOwners = users.filter((u: User) => u.role === 'shopowner');
+    const activeShopOwners = new Set(
+      orders.filter((o: Order) => o.userRole === 'shopowner' && ['placed', 'accepted', 'shipped'].includes(o.status) && o.userId)
+        .map((o: Order) => o.userId)
+    ).size;
+
+    // Profit and savings metrics - split admin profit by user role
+    // Use stored order values if available, otherwise calculate from product prices
+    const totalAdminProfitFromCustomers = orders
+      .filter((o: Order) => o.status === 'delivered' && o.userRole !== 'shopowner')
+      .reduce((sum: number, o: Order) => {
+        // Use stored adminProfit if available, otherwise calculate
+        if (o.adminProfit !== undefined) {
+          return sum + o.adminProfit;
+        }
+        return sum + o.items.reduce((itemSum: number, item: CartItem) => {
+          const customerPrice = Number(item.product.customerPrice) || 0;
+          const purchasePrice = Number(item.product.purchasePrice) || 0;
+          const profit = (customerPrice - purchasePrice) * item.quantity;
+          return itemSum + profit;
+        }, 0);
+      }, 0);
+
+    const totalAdminProfitFromShops = orders
+      .filter((o: Order) => o.status === 'delivered' && o.userRole === 'shopowner')
+      .reduce((sum: number, o: Order) => {
+        // Use stored adminProfit if available, otherwise calculate
+        if (o.adminProfit !== undefined) {
+          return sum + o.adminProfit;
+        }
+        return sum + o.items.reduce((itemSum: number, item: CartItem) => {
+          const shopPrice = Number(item.product.shopPrice) || 0;
+          const purchasePrice = Number(item.product.purchasePrice) || 0;
+          const profit = (shopPrice - purchasePrice) * item.quantity;
+          return itemSum + profit;
+        }, 0);
+      }, 0);
+
+    const totalAdminProfit = totalAdminProfitFromCustomers + totalAdminProfitFromShops;
+
+    const totalShopProfit = orders
+      .filter((o: Order) => o.status === 'delivered' && o.userRole === 'shopowner')
+      .reduce((sum: number, o: Order) => {
+        // Use stored shopProfit if available, otherwise calculate
+        if (o.shopProfit !== undefined) {
+          return sum + o.shopProfit;
+        }
+        return sum + o.items.reduce((itemSum: number, item: CartItem) => {
+          const mrp = Number(item.product.mrp) || 0;
+          const shopPrice = Number(item.product.shopPrice) || 0;
+          const profit = (mrp - shopPrice) * item.quantity;
+          return itemSum + profit;
+        }, 0);
+      }, 0);
+
+    const totalCustomerSavings = orders
+      .filter((o: Order) => o.status === 'delivered' && o.userRole !== 'shopowner')
+      .reduce((sum: number, o: Order) => {
+        // Use stored customerSavings if available, otherwise calculate
+        if (o.customerSavings !== undefined) {
+          return sum + o.customerSavings;
+        }
+        return sum + o.items.reduce((itemSum: number, item: CartItem) => {
+          const mrp = Number(item.product.mrp) || 0;
+          const customerPrice = Number(item.product.customerPrice) || 0;
+          const savings = (mrp - customerPrice) * item.quantity;
+          return itemSum + savings;
+        }, 0);
+      }, 0);
+
+    // Product metrics
+    const lowStockProducts = products.filter((p: Product) => p.stock > 0 && p.stock <= 10);
+    const outOfStockProducts = products.filter((p: Product) => p.stock === 0);
+    const totalProducts = products.length;
+
+    // Today's activity
+    const today = new Date().toISOString().split('T')[0];
+    const todayOrders = orders.filter((o: Order) => o.date === today);
+    const todayRevenue = todayOrders.filter((o: Order) => o.status === 'delivered').reduce((sum: number, o: Order) => sum + o.total, 0);
+
+    return {
+      // Order metrics
+      totalOrders: orders.length,
+      placedOrders: placedOrders.length,
+      acceptedOrders: acceptedOrders.length,
+      shippedOrders: shippedOrders.length,
+      deliveredOrders: deliveredOrders.length,
+      cancelledOrders: cancelledOrders.length,
+      rejectedOrders: rejectedOrders.length,
+
+      // Revenue metrics
+      totalRevenue,
+      pipelineValue,
+      todayRevenue,
+      averageOrderValue: deliveredOrders.length > 0 ? totalRevenue / deliveredOrders.length : 0,
+
+      // Customer metrics
+      totalCustomers,
+      activeCustomers,
+      returningCustomers,
+      customerRetentionRate: totalCustomers > 0 ? (returningCustomers / totalCustomers) * 100 : 0,
+
+      // Shop metrics
+      totalShopOwners: shopOwners.length,
+      activeShopOwners,
+
+      // Profit and savings metrics
+      totalAdminProfit,
+      totalAdminProfitFromCustomers,
+      totalAdminProfitFromShops,
+      totalShopProfit,
+      totalCustomerSavings,
+
+      // Product metrics
+      totalProducts,
+      lowStockProducts: lowStockProducts.length,
+      outOfStockProducts: outOfStockProducts.length,
+
+      // Activity metrics
+      todayOrders: todayOrders.length,
+      todayPlacedOrders: todayOrders.filter((o: Order) => o.status === 'placed').length,
+      todayDeliveredOrders: todayOrders.filter((o: Order) => o.status === 'delivered').length,
+
+      // Growth metrics
+      monthlyGrowth: 0, // Could be calculated based on historical data
+      orderCompletionRate: orders.length > 0 ? (deliveredOrders.length / orders.length) * 100 : 0,
+    };
   },
 }));
