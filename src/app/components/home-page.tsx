@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router';
-import { ChevronLeft, ChevronRight, TrendingUp, Truck, Shield, Clock, ArrowRight, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, TrendingUp, Truck, Shield, Clock, ArrowRight, Zap, Mic, Headphones, Sparkles, BrainCircuit } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useStore } from '../store';
 import { products, CATEGORIES, BANNER_IMAGES, FEATURED_PRODUCTS, BEST_SELLERS, PRODUCTS_MAP } from '../data';
@@ -157,6 +157,102 @@ function CategorySection() {
   );
 }
 
+const AI_FEATURES = [
+  {
+    icon: Mic,
+    title: 'Voice Search',
+    desc: 'Search products by speaking — just tap the mic and say what you need.',
+    gradient: 'from-violet-500 to-purple-600',
+    glow: 'shadow-violet-500/20',
+    link: '/products',
+    linkLabel: 'Try Voice Search',
+  },
+  {
+    icon: Headphones,
+    title: 'Multilingual Audio',
+    desc: 'Listen to product descriptions in Hindi, Telugu, Tamil and more — powered by Sarvam AI.',
+    gradient: 'from-blue-500 to-cyan-500',
+    glow: 'shadow-blue-500/20',
+    link: '/products',
+    linkLabel: 'Explore Products',
+  },
+  {
+    icon: Sparkles,
+    title: 'Smart Picks',
+    desc: 'AI-curated product recommendations based on your browsing & purchase history.',
+    gradient: 'from-amber-500 to-orange-500',
+    glow: 'shadow-amber-500/20',
+    link: '/products',
+    linkLabel: 'View Picks',
+  },
+];
+
+function AiSection() {
+  return (
+    <section className="relative rounded-2xl sm:rounded-3xl overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(139,92,246,0.15),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,rgba(59,130,246,0.12),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDYwIEwgNjAgMCIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IGZpbGw9InVybCgjZykiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiLz48L3N2Zz4=')] opacity-50" />
+
+      <div className="relative p-6 sm:p-10">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex items-center gap-3 mb-8"
+        >
+          <div className="p-2.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg shadow-violet-500/25">
+            <BrainCircuit className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-white text-[22px]" style={{ fontWeight: 700 }}>AI-Powered Shopping</h2>
+            <p className="text-white/50 text-[13px]">Smarter, faster, and more personal</p>
+          </div>
+        </motion.div>
+
+        {/* Feature Cards */}
+        <div className="grid sm:grid-cols-3 gap-4">
+          {AI_FEATURES.map((feat, i) => (
+            <motion.div
+              key={feat.title}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.12, duration: 0.5 }}
+              viewport={{ once: true }}
+              className={`group relative bg-white/[0.06] backdrop-blur-md border border-white/10 rounded-2xl p-5 hover:bg-white/[0.1] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${feat.glow}`}
+            >
+              {/* Icon */}
+              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${feat.gradient} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                <feat.icon className="w-5 h-5 text-white" />
+              </div>
+
+              {/* Content */}
+              <h3 className="text-white text-[16px] mb-1.5" style={{ fontWeight: 600 }}>{feat.title}</h3>
+              <p className="text-white/55 text-[13px] leading-relaxed mb-4">{feat.desc}</p>
+
+              {/* Link */}
+              <Link
+                to={feat.link}
+                className="inline-flex items-center gap-1.5 text-[12px] text-white/70 hover:text-white transition-colors group/link"
+                style={{ fontWeight: 600 }}
+              >
+                {feat.linkLabel}
+                <ArrowRight className="w-3 h-3 group-hover/link:translate-x-0.5 transition-transform" />
+              </Link>
+
+              {/* Decorative glow */}
+              <div className={`absolute -top-10 -right-10 w-24 h-24 bg-gradient-to-br ${feat.gradient} rounded-full opacity-0 group-hover:opacity-10 blur-2xl transition-opacity duration-500`} />
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function HomePage() {
   const userRole = useStore((s) => s.user?.role);
   const recentlyViewed = useStore((s) => s.recentlyViewed);
@@ -225,6 +321,9 @@ export function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* AI-Powered Section */}
+      <AiSection />
 
       {/* Top Brands */}
       <section className="bg-white rounded-2xl sm:rounded-3xl border border-border/80 p-6 sm:p-8 shadow-sm">

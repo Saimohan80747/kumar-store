@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useSearchParams } from 'react-router';
-import { CreditCard, Banknote, Smartphone, MapPin, ShieldCheck, Tag, Locate } from 'lucide-react';
+import { CreditCard, Banknote, Smartphone, MapPin, ShieldCheck, Tag, Locate, X } from 'lucide-react';
 import { useStore, FREE_DELIVERY_THRESHOLD, DELIVERY_FEE } from '../store';
 import type { Order } from '../store';
 import { toast } from 'sonner';
@@ -90,6 +90,7 @@ export function CheckoutPage() {
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
   const [isPlacing, setIsPlacing] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [detectedCoords, setDetectedCoords] = useState<{ lat: number; lng: number } | null>(null);
   // Capture totals before cart is cleared
   const capturedTotalRef = useRef<number | null>(null);
   // Read coupon info from URL search params (passed from cart page)
@@ -163,58 +164,88 @@ export function CheckoutPage() {
                   placeholder="e.g. 42, Flat 3A, Tower B"
                 />
               </div>
-            <div className="flex gap-2">
-              <textarea
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                rows={3}
-                className="flex-1 px-4 py-3 border rounded-lg bg-input-background text-[14px] outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder="Street, area, city, state, pincode"
-              />
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!navigator.geolocation) {
-                    toast.error('Location is not supported by your browser');
-                    return;
-                  }
-                  setIsLocating(true);
-                  try {
-                    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                      navigator.geolocation.getCurrentPosition(resolve, reject, {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 60000,
-                      });
-                    });
-                    const { latitude, longitude } = position.coords;
-                    const { address: locAddress, houseNumber: locHouse } = await reverseGeocode(latitude, longitude);
-                    setAddress(locAddress);
-                    setHouseNumber(locHouse || '');
-                    setDeliveryLocationUrl(`https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`);
-                    toast.success(locHouse ? 'Address with house no. filled.' : 'Location filled. Add house/flat no. if needed.');
-                  } catch (err) {
-                    const msg = err instanceof Error ? err.message : 'Unknown error';
-                    if (msg.includes('denied') || msg.includes('Permission')) {
-                      toast.error('Location permission denied. Allow location access or enter address manually.');
-                    } else if (msg.includes('unavailable') || msg.includes('timeout')) {
-                      toast.error('Location unavailable. Check GPS or enter address manually.');
-                    } else {
-                      toast.error('Could not get address from Google Maps. Enter manually.');
+              <div className="flex gap-2">
+                <textarea
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  rows={3}
+                  className="flex-1 px-4 py-3 border rounded-lg bg-input-background text-[14px] outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Street, area, city, state, pincode"
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!navigator.geolocation) {
+                      toast.error('Location is not supported by your browser');
+                      return;
                     }
-                  } finally {
-                    setIsLocating(false);
-                  }
-                }}
-                disabled={isLocating}
-                className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 border border-primary/30 rounded-lg bg-primary/5 text-primary hover:bg-primary/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                title="Use current location (Google Maps / device GPS)"
-              >
-                <Locate className="w-5 h-5" />
-                <span className="text-[11px]" style={{ fontWeight: 600 }}>{isLocating ? 'Getting…' : 'Current location'}</span>
-              </button>
-            </div>
-            <p className="text-[12px] text-muted-foreground mt-2">Allow location access when prompted. Add house/flat no. above if it wasn’t detected.</p>
+                    setIsLocating(true);
+                    try {
+                      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                          enableHighAccuracy: true,
+                          timeout: 10000,
+                          maximumAge: 60000,
+                        });
+                      });
+                      const { latitude, longitude } = position.coords;
+                      const { address: locAddress, houseNumber: locHouse } = await reverseGeocode(latitude, longitude);
+                      setAddress(locAddress);
+                      setHouseNumber(locHouse || '');
+                      setDetectedCoords({ lat: latitude, lng: longitude });
+                      setDeliveryLocationUrl(`https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`);
+                      toast.success(locHouse ? 'Address with house no. filled.' : 'Location filled. Add house/flat no. if needed.');
+                    } catch (err) {
+                      const msg = err instanceof Error ? err.message : 'Unknown error';
+                      if (msg.includes('denied') || msg.includes('Permission')) {
+                        toast.error('Location permission denied. Allow location access or enter address manually.');
+                      } else if (msg.includes('unavailable') || msg.includes('timeout')) {
+                        toast.error('Location unavailable. Check GPS or enter address manually.');
+                      } else {
+                        toast.error('Could not get address from Google Maps. Enter manually.');
+                      }
+                    } finally {
+                      setIsLocating(false);
+                    }
+                  }}
+                  disabled={isLocating}
+                  className="shrink-0 flex flex-col items-center justify-center gap-1 px-3 py-2 border border-primary/30 rounded-lg bg-primary/5 text-primary hover:bg-primary/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  title="Use current location (Google Maps / device GPS)"
+                >
+                  <Locate className="w-5 h-5" />
+                  <span className="text-[11px]" style={{ fontWeight: 600 }}>{isLocating ? 'Getting…' : 'Current location'}</span>
+                </button>
+              </div>
+
+              {/* Embedded Google Map preview */}
+              {detectedCoords && (
+                <div className="mt-3 relative rounded-xl overflow-hidden border border-primary/20 shadow-sm">
+                  <iframe
+                    title="Delivery location"
+                    width="100%"
+                    height="220"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&q=${detectedCoords.lat},${detectedCoords.lng}&zoom=16`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setDetectedCoords(null); setDeliveryLocationUrl(undefined); }}
+                    className="absolute top-2 right-2 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-red-50 transition-colors group"
+                    title="Remove pin"
+                  >
+                    <X className="w-3.5 h-3.5 text-gray-500 group-hover:text-red-500" />
+                  </button>
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/50 to-transparent p-3">
+                    <p className="text-white text-[11px] flex items-center gap-1" style={{ fontWeight: 500 }}>
+                      <MapPin className="w-3 h-3" /> Location pinned on map
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-[12px] text-muted-foreground mt-2">Allow location access when prompted. Add house/flat no. above if it wasn’t detected.</p>
             </div>
           </div>
 
