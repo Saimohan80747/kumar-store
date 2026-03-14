@@ -155,10 +155,14 @@
     @apply bg-background text-foreground;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+    width: 100%;
   }
 
   html {
     font-size: var(--font-size);
+    overflow-x: hidden;
+    width: 100%;
   }
 
   h1 {
