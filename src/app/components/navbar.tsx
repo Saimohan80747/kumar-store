@@ -328,7 +328,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl shadow-sm border-b border-border/60 glass-tinted">
       {/* Top bar */}
-      <div className="bg-gradient-to-r from-primary via-primary to-emerald-600 text-primary-foreground">
+      <div className="hidden sm:block bg-gradient-to-r from-primary via-primary to-emerald-600 text-primary-foreground">
         <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-between text-[12px]">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Deliver to all India</span>
@@ -362,7 +362,7 @@ export function Navbar() {
             <div className="flex items-center bg-gray-50/80 border border-border/70 rounded-xl overflow-hidden focus-within:border-primary/40 transition-all focus-glow">
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-transparent outline-none text-[13px] sm:text-[14px] min-w-0"

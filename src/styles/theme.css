@@ -153,6 +153,8 @@
 
   body {
     @apply bg-background text-foreground;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   html {
@@ -269,6 +271,8 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Better focus rings */

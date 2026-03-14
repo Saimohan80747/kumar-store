@@ -97,12 +97,12 @@ export function ProductDetail() {
       <div className="bg-white rounded-3xl border border-border/80 overflow-hidden shadow-premium-lg">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
           {/* Image */}
-          <div className="p-6 lg:p-10 bg-gradient-to-br from-gray-50 to-gray-100/50 flex items-center justify-center relative shine-hover">
-            <img src={product.image} alt={product.name} className="max-w-full max-h-[400px] object-contain rounded-2xl hover:scale-105 transition-transform duration-700 ease-out" loading="lazy" />
+          <div className="p-4 sm:p-6 lg:p-10 bg-gradient-to-br from-gray-50 to-gray-100/50 flex items-center justify-center relative shine-hover">
+            <img src={product.image} alt={product.name} className="max-w-full max-h-[300px] sm:max-h-[400px] object-contain rounded-2xl hover:scale-105 transition-transform duration-700 ease-out" loading="lazy" />
           </div>
 
           {/* Details */}
-          <div className="p-6 lg:p-10">
+          <div className="p-4 sm:p-6 lg:p-10">
             <div className="flex items-start justify-between">
               <div>
                 <span className="text-[11px] text-muted-foreground uppercase tracking-widest inline-flex items-center gap-1.5" style={{ fontWeight: 600 }}>
@@ -111,12 +111,12 @@ export function ProductDetail() {
                 </span>
                 <h1 className="text-[26px] mt-2 leading-tight" style={{ fontWeight: 700 }}>{product.name}</h1>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => { toggleWishlist(product.id); toast.success(isWished ? 'Removed from wishlist' : 'Added to wishlist'); }} className="p-2.5 border border-border/80 rounded-xl hover:bg-gray-50 hover:border-primary/20 transition-all">
-                  <Heart className={`w - 5 h - 5 ${isWished ? 'fill-red-500 text-red-500' : 'text-gray-400'} `} />
+              <div className="flex gap-1.5 sm:gap-2">
+                <button onClick={() => { toggleWishlist(product.id); toast.success(isWished ? 'Removed from wishlist' : 'Added to wishlist'); }} className="p-2 sm:p-2.5 border border-border/80 rounded-xl hover:bg-gray-50 hover:border-primary/20 transition-all">
+                  <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isWished ? 'fill-red-500 text-red-500' : 'text-gray-400'} `} />
                 </button>
-                <button className="p-2.5 border border-border/80 rounded-xl hover:bg-gray-50 hover:border-primary/20 transition-all" onClick={() => toast.success('Link copied!')}>
-                  <Share2 className="w-5 h-5 text-gray-400" />
+                <button className="p-2 sm:p-2.5 border border-border/80 rounded-xl hover:bg-gray-50 hover:border-primary/20 transition-all" onClick={() => toast.success('Link copied!')}>
+                  <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                 </button>
               </div>
             </div>
@@ -314,8 +314,8 @@ export function ProductDetail() {
         </div>
 
         {/* Description */}
-        <div className="border-t p-6 lg:p-10">
-          <h3 className="text-[18px] mb-4 flex items-center gap-2" style={{ fontWeight: 600 }}>
+        <div className="border-t p-4 sm:p-6 lg:p-10">
+          <h3 className="text-[18px] mb-3 sm:mb-4 flex items-center gap-2" style={{ fontWeight: 600 }}>
             <div className="w-1 h-5 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
             Product Description
           </h3>
@@ -330,7 +330,7 @@ export function ProductDetail() {
             <div className="w-1 h-7 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
             Related Products
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
             {related.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}

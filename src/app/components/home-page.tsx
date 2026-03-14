@@ -31,7 +31,7 @@ function HeroBanner() {
   }, []);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl h-[320px] sm:h-[440px] lg:h-[520px] shadow-2xl ring-1 ring-black/5">
+    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl h-[280px] sm:h-[440px] lg:h-[520px] shadow-2xl ring-1 ring-black/5">
       {/* Floating gradient orbs for depth */}
       <div className="orb orb-primary w-64 h-64 -top-20 -left-20 animate-float-slow" />
       <div className="orb orb-emerald w-48 h-48 bottom-10 right-10 animate-float-slow" style={{ animationDelay: '2s' }} />
@@ -51,7 +51,7 @@ function HeroBanner() {
                 animate={i === current ? { y: 0, opacity: 1 } : {}}
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="text-white whitespace-pre-line text-[24px] xs:text-[28px] sm:text-[40px] lg:text-[52px] drop-shadow-lg"
-                style={{ fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.025em' }}
+                style={{ fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.025em' }}
               >
                 {s.title}
               </motion.h1>
@@ -279,7 +279,7 @@ export function HomePage() {
           </div>
           <Link to="/products" className="text-primary text-[12px] sm:text-[13px] flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-primary/5 hover:bg-primary/10 rounded-full transition-colors" style={{ fontWeight: 600 }}>View All <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" /></Link>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4 md:gap-5">
           {FEATURED_PRODUCTS.map((p, i) => (
             <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} viewport={{ once: true }}>
               <ProductCard product={p} />
@@ -298,7 +298,7 @@ export function HomePage() {
             <h2 className="text-[22px]" style={{ fontWeight: 700 }}>Wholesale Deals</h2>
             <span className="bg-gradient-to-r from-primary to-emerald-500 text-white text-[11px] px-3 py-1 rounded-full shadow-sm" style={{ fontWeight: 600 }}>Shop Owner Exclusive</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
             {products.slice(0, 5).map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
@@ -315,7 +315,7 @@ export function HomePage() {
           </div>
           <Link to="/products" className="text-primary text-[12px] sm:text-[13px] flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-primary/5 hover:bg-primary/10 rounded-full transition-colors" style={{ fontWeight: 600 }}>View All <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" /></Link>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4 md:gap-5">
           {BEST_SELLERS.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
@@ -352,7 +352,7 @@ export function HomePage() {
             <div className="w-1 h-7 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
             <h2 className="text-[22px]" style={{ fontWeight: 700 }}>Recently Viewed</h2>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
             {recentProducts.slice(0, 5).map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
