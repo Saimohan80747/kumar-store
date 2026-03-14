@@ -110,7 +110,7 @@ export function AdminLayout() {
   // Password gate — shown before any admin content
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #0f172a 100%)' }}>
+      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-y-auto" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #0f172a 100%)' }}>
         <Toaster position="top-right" richColors />
 
         {/* Animated background orbs */}
