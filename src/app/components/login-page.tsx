@@ -92,12 +92,12 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center py-10 px-4 relative overflow-hidden">
+    <div className="min-h-[85vh] flex items-start lg:items-center justify-center py-6 sm:py-10 px-4 relative overflow-x-hidden">
       {/* Animated gradient orbs */}
       <div className="orb orb-primary w-96 h-96 -top-32 -right-32 animate-float-slow" />
       <div className="orb orb-emerald w-72 h-72 -bottom-24 -left-24 animate-float-slow" style={{ animationDelay: '2s' }} />
       <div className="orb orb-teal w-56 h-56 top-1/3 -right-16 animate-float-slow" style={{ animationDelay: '4s' }} />
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-md relative z-10 pb-4">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-primary to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow glow-primary animate-float">
