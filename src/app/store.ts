@@ -160,6 +160,7 @@ interface AppState {
   registerCustomer: (user: Omit<User, 'id' | 'role'>) => Promise<{ success: boolean; error?: string }>;
   registerShopOwner: (request: Omit<ShopRequest, 'id' | 'status' | 'date'>) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<void>;
+  checkEmailExists: (email: string) => Promise<boolean>;
 
   // Admin
   approveShop: (requestId: string) => Promise<void>;
@@ -389,6 +390,21 @@ export const useStore = create<AppState>((set, get) => ({
       provider: 'google',
       options: { redirectTo: window.location.origin }
     });
+  },
+
+  checkEmailExists: async (email: string) => {
+    const { registeredUsers, shopRequests } = get();
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Check if user is in registeredUsers (already has an account)
+    const isInUsers = registeredUsers.some(u => u.email.toLowerCase() === cleanEmail);
+    if (isInUsers) return true;
+
+    // Also check if they have a pending/rejected shop request
+    const isInShopReqs = shopRequests.some(r => r.email.toLowerCase() === cleanEmail);
+    if (isInShopReqs) return true;
+
+    return false;
   },
 
   logout: async () => {
