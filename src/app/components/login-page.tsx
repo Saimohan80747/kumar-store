@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 export function LoginPage() {
   const login = useStore((s) => s.login);
-  const loginWithGoogle = useStore((s) => s.loginWithGoogle);
+  const checkEmailExists = useStore((s) => s.checkEmailExists);
   const navigate = useNavigate();
   const [role, setRole] = useState<'customer' | 'shopowner'>('customer');
   const [email, setEmail] = useState('');
@@ -44,6 +44,18 @@ export function LoginPage() {
           navigate('/');
         }
       } else {
+        // Check if user exists on failure
+        const exists = await checkEmailExists(email.trim());
+        if (!exists) {
+          toast.info("Account not found. Redirecting to registration...");
+          setTimeout(() => {
+            navigate('/register', {
+              state: { prefill: { email: email.trim(), password, role } }
+            });
+          }, 1500);
+          return;
+        }
+
         setErrorType('error');
         setError(result.error || 'Login failed');
       }
@@ -51,13 +63,15 @@ export function LoginPage() {
       setError('Network error. Please try again.');
       setErrorType('error');
     } finally {
-      setLoading(false);
+      if (!loading) setLoading(false); // Only unset if we didn't redirect
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
-      await loginWithGoogle();
+      // For Google, we redirect to /register first to check if they exist
+      // The register page already has clean logic for Google OAuth pre-fill
+      await navigate('/register', { state: { googleAuth: true, role } });
     } catch (err: any) {
       toast.error(err.message || 'Google sign in failed');
     }

@@ -44,14 +44,14 @@ function HeroBanner() {
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
           <div className="absolute inset-0 flex items-center">
-            <div className="px-8 sm:px-12 max-w-xl">
+            <div className="px-6 sm:px-12 max-w-xl">
               <motion.h1
                 key={`title-${i}-${current}`}
                 initial={{ y: 30, opacity: 0 }}
                 animate={i === current ? { y: 0, opacity: 1 } : {}}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-white whitespace-pre-line text-[30px] sm:text-[40px] lg:text-[52px] drop-shadow-lg"
-                style={{ fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.025em' }}
+                className="text-white whitespace-pre-line text-[24px] xs:text-[28px] sm:text-[40px] lg:text-[52px] drop-shadow-lg"
+                style={{ fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.025em' }}
               >
                 {s.title}
               </motion.h1>
@@ -60,7 +60,7 @@ function HeroBanner() {
                 initial={{ y: 20, opacity: 0 }}
                 animate={i === current ? { y: 0, opacity: 1 } : {}}
                 transition={{ duration: 0.6, delay: 0.4 }}
-                className="text-white/85 mt-4 text-[14px] sm:text-[17px] max-w-md leading-relaxed"
+                className="text-white/85 mt-3 sm:mt-4 text-[13px] sm:text-[17px] max-w-md leading-relaxed line-clamp-2 sm:line-clamp-none"
               >
                 {s.sub}
               </motion.p>
@@ -70,8 +70,8 @@ function HeroBanner() {
                 animate={i === current ? { y: 0, opacity: 1 } : {}}
                 transition={{ duration: 0.6, delay: 0.6 }}
               >
-                <Link to="/products" className="inline-flex items-center gap-2.5 mt-6 px-7 py-3.5 bg-white text-gray-900 rounded-full hover:bg-white/90 shadow-lg hover:shadow-xl transition-all text-[15px] group" style={{ fontWeight: 700 }}>
-                  {s.cta} <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                <Link to="/products" className="inline-flex items-center gap-2 mt-4 sm:mt-6 px-5 sm:px-7 py-2.5 sm:py-3.5 bg-white text-gray-900 rounded-full hover:bg-white/90 shadow-lg hover:shadow-xl transition-all text-[14px] sm:text-[15px] group" style={{ fontWeight: 700 }}>
+                  {s.cta} <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </motion.div>
             </div>
@@ -86,9 +86,9 @@ function HeroBanner() {
         <ChevronRight className="w-5 h-5" />
       </button>
 
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2">
         {HERO_SLIDES.map((_, i) => (
-          <button key={i} onClick={() => setCurrent(i)} className={`h-1.5 rounded-full transition-all duration-300 ${i === current ? 'bg-white w-10' : 'bg-white/40 w-1.5 hover:bg-white/60'}`} />
+          <button key={i} onClick={() => setCurrent(i)} className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${i === current ? 'bg-white w-8 sm:w-10' : 'bg-white/40 w-1 sm:w-1.5 hover:bg-white/60'}`} />
         ))}
       </div>
     </div>
@@ -97,7 +97,7 @@ function HeroBanner() {
 
 function StatsBanner() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
       {STATS.map((s, i) => (
         <motion.div
           key={s.label}
@@ -105,14 +105,14 @@ function StatsBanner() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
           viewport={{ once: true }}
-          className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-border/80 hover:border-primary/20 hover:shadow-lg transition-all duration-300 group cursor-default glow-primary-hover shadow-premium"
+          className="flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 bg-white rounded-2xl border border-border/80 hover:border-primary/20 hover:shadow-lg transition-all duration-300 group cursor-default glow-primary-hover shadow-premium"
         >
-          <div className="p-2.5 bg-gradient-to-br from-primary/10 to-emerald-500/10 rounded-xl shrink-0 group-hover:scale-110 transition-transform duration-300">
-            <s.icon className="w-5 h-5 text-primary" />
+          <div className="p-2 sm:p-2.5 bg-gradient-to-br from-primary/10 to-emerald-500/10 rounded-xl shrink-0 group-hover:scale-110 transition-transform duration-300">
+            <s.icon className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary" />
           </div>
-          <div>
-            <p className="text-[14px]" style={{ fontWeight: 600 }}>{s.label}</p>
-            <p className="text-[12px] text-muted-foreground">{s.sub}</p>
+          <div className="min-w-0">
+            <p className="text-[13px] sm:text-[14px] truncate" style={{ fontWeight: 600 }}>{s.label}</p>
+            <p className="text-[11px] sm:text-[12px] text-muted-foreground truncate">{s.sub}</p>
           </div>
         </motion.div>
       ))}
@@ -123,16 +123,16 @@ function StatsBanner() {
 function CategorySection() {
   return (
     <section>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-7 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
-          <h2 className="text-[22px]" style={{ fontWeight: 700 }}>Shop by Category</h2>
+          <div className="w-1 h-6 sm:h-7 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
+          <h2 className="text-[18px] sm:text-[22px]" style={{ fontWeight: 700 }}>Shop by Category</h2>
         </div>
-        <Link to="/products" className="text-primary text-[13px] flex items-center gap-1.5 px-4 py-1.5 bg-primary/5 hover:bg-primary/10 rounded-full transition-colors" style={{ fontWeight: 600 }}>
-          View All <ArrowRight className="w-3.5 h-3.5" />
+        <Link to="/products" className="text-primary text-[12px] sm:text-[13px] flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-primary/5 hover:bg-primary/10 rounded-full transition-colors" style={{ fontWeight: 600 }}>
+          View All <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
         </Link>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+      <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-3">
         {CATEGORIES.map((cat, i) => (
           <motion.div
             key={cat.slug}
@@ -143,12 +143,12 @@ function CategorySection() {
           >
             <Link
               to={`/products?category=${cat.slug}`}
-              className="flex flex-col items-center gap-2.5 p-4 bg-white rounded-2xl border border-border/80 hover:border-primary/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group shine-hover shadow-premium"
+              className="flex flex-col items-center gap-2 p-3 sm:p-4 bg-white rounded-2xl border border-border/80 hover:border-primary/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group shine-hover shadow-premium"
             >
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/5 to-emerald-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <span className="text-[28px]">{cat.icon}</span>
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-primary/5 to-emerald-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <span className="text-[24px] sm:text-[28px]">{cat.icon}</span>
               </div>
-              <span className="text-[12px] text-center text-muted-foreground group-hover:text-foreground transition-colors" style={{ fontWeight: 600 }}>{cat.name}</span>
+              <span className="text-[11px] sm:text-[12px] text-center text-muted-foreground group-hover:text-foreground transition-colors truncate w-full px-1" style={{ fontWeight: 600 }}>{cat.name}</span>
             </Link>
           </motion.div>
         ))}
@@ -272,14 +272,14 @@ export function HomePage() {
 
       {/* Featured Products */}
       <section>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-7 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
-            <h2 className="text-[22px]" style={{ fontWeight: 700 }}>Featured Products</h2>
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-1 h-6 sm:h-7 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
+            <h2 className="text-[18px] sm:text-[22px]" style={{ fontWeight: 700 }}>Featured Products</h2>
           </div>
-          <Link to="/products" className="text-primary text-[13px] flex items-center gap-1.5 px-4 py-1.5 bg-primary/5 hover:bg-primary/10 rounded-full transition-colors" style={{ fontWeight: 600 }}>View All <ArrowRight className="w-3.5 h-3.5" /></Link>
+          <Link to="/products" className="text-primary text-[12px] sm:text-[13px] flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-primary/5 hover:bg-primary/10 rounded-full transition-colors" style={{ fontWeight: 600 }}>View All <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" /></Link>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
           {FEATURED_PRODUCTS.map((p, i) => (
             <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} viewport={{ once: true }}>
               <ProductCard product={p} />
@@ -308,14 +308,14 @@ export function HomePage() {
 
       {/* Best Sellers */}
       <section>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-7 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
-            <h2 className="text-[22px]" style={{ fontWeight: 700 }}>Best Sellers</h2>
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-1 h-6 sm:h-7 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
+            <h2 className="text-[18px] sm:text-[22px]" style={{ fontWeight: 700 }}>Best Sellers</h2>
           </div>
-          <Link to="/products" className="text-primary text-[13px] flex items-center gap-1.5 px-4 py-1.5 bg-primary/5 hover:bg-primary/10 rounded-full transition-colors" style={{ fontWeight: 600 }}>View All <ArrowRight className="w-3.5 h-3.5" /></Link>
+          <Link to="/products" className="text-primary text-[12px] sm:text-[13px] flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-primary/5 hover:bg-primary/10 rounded-full transition-colors" style={{ fontWeight: 600 }}>View All <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" /></Link>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
           {BEST_SELLERS.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
@@ -361,15 +361,15 @@ export function HomePage() {
       )}
 
       {/* CTA */}
-      <section className="relative bg-gradient-to-br from-primary via-emerald-600 to-teal-600 rounded-2xl sm:rounded-3xl p-8 sm:p-14 text-white text-center overflow-hidden animate-gradient">
+      <section className="relative bg-gradient-to-br from-primary via-emerald-600 to-teal-600 rounded-[24px] sm:rounded-[32px] p-8 sm:p-12 lg:p-14 text-white text-center overflow-hidden animate-gradient">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.12),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.08),transparent_50%)]" />
         <div className="orb w-72 h-72 -top-20 -right-20 animate-float-slow" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)' }} />
         <div className="orb w-56 h-56 -bottom-16 -left-16 animate-float-slow" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)', animationDelay: '3s' }} />
         <div className="relative">
-          <h2 className="text-[28px] sm:text-[36px]" style={{ fontWeight: 800, letterSpacing: '-0.02em' }}>Are You a Shop Owner?</h2>
-          <p className="mt-3 text-white/80 max-w-lg mx-auto text-[15px] sm:text-[16px] leading-relaxed">Register as a wholesale buyer and get exclusive pricing, bulk discounts, and dedicated support.</p>
-          <Link to="/register?role=shopowner" className="inline-flex items-center gap-2.5 mt-8 px-8 py-3.5 bg-white text-gray-900 rounded-full hover:bg-white/90 shadow-lg hover:shadow-xl transition-all text-[15px] group glow-white btn-press" style={{ fontWeight: 700 }}>
+          <h2 className="text-[24px] sm:text-[32px] lg:text-[36px]" style={{ fontWeight: 800, letterSpacing: '-0.02em' }}>Are You a Shop Owner?</h2>
+          <p className="mt-3 text-white/80 max-w-lg mx-auto text-[14px] sm:text-[16px] leading-relaxed">Register as a wholesale buyer and get exclusive pricing, bulk discounts, and dedicated support.</p>
+          <Link to="/register?role=shopowner" className="inline-flex items-center gap-2.5 mt-6 sm:mt-8 px-6 sm:px-8 py-3 sm:py-3.5 bg-white text-gray-900 rounded-full hover:bg-white/90 shadow-lg hover:shadow-xl transition-all text-[14px] sm:text-[15px] group glow-white btn-press" style={{ fontWeight: 700 }}>
             Register as Shop Owner <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>

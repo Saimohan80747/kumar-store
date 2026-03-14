@@ -342,22 +342,22 @@ export function ProductDetail() {
       {isLoggedIn && (
         <div className="md:hidden fixed bottom-14 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-border/50 px-3 py-2.5 z-40 flex items-center gap-2 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] truncate" style={{ fontWeight: 600 }}>{product.name}</p>
-            <p className="text-[15px] text-primary" style={{ fontWeight: 700 }}>Rs.{(price * qty).toLocaleString()}</p>
+            <p className="text-[12px] truncate" style={{ fontWeight: 600 }}>{product.name}</p>
+            <p className="text-[16px] text-primary" style={{ fontWeight: 800 }}>Rs.{(price * qty).toLocaleString()}</p>
           </div>
-          <div className="flex items-center border rounded-lg overflow-hidden shrink-0">
-            <button onClick={() => setQty(Math.max(minQty, qty - (isShop ? minQty : 1)))} className="p-2 hover:bg-gray-50">
+          <div className="flex items-center border border-border/60 rounded-lg overflow-hidden shrink-0 bg-white shadow-sm">
+            <button onClick={() => setQty(Math.max(minQty, qty - (isShop ? minQty : 1)))} className="p-2 hover:bg-primary/5 transition-colors">
               <Minus className="w-3.5 h-3.5" />
             </button>
-            <span className="w-8 text-center text-[14px]" style={{ fontWeight: 600 }}>{qty}</span>
-            <button onClick={() => setQty(Math.min(maxQty, qty + (isShop ? minQty : 1)))} className="p-2 hover:bg-gray-50">
+            <span className="w-8 text-center text-[14px]" style={{ fontWeight: 700 }}>{qty}</span>
+            <button onClick={() => setQty(Math.min(maxQty, qty + (isShop ? minQty : 1)))} className="p-2 hover:bg-primary/5 transition-colors">
               <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
           <button
             onClick={() => { addToCart(product, qty); toast.success(`Added ${qty} to cart`); }}
-            className="px-4 py-2.5 bg-primary text-white rounded-xl text-[14px] flex items-center gap-1.5 shrink-0 min-h-[44px] hover:shadow-md hover:shadow-primary/25 transition-all active:scale-[0.97]"
-            style={{ fontWeight: 600 }}
+            className="px-4 py-2.5 bg-primary text-white rounded-xl text-[14px] flex items-center justify-center gap-1.5 shrink-0 min-h-[44px] shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all active:scale-[0.97] btn-press"
+            style={{ fontWeight: 700 }}
           >
             <ShoppingCart className="w-4 h-4" /> Add
           </button>

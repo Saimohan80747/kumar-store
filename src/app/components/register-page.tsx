@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router';
 import {
   User, Store, Mail, Phone, MapPin, Lock, Eye, EyeOff, ArrowRight,
   CheckCircle2, Clock, Loader2, ShieldCheck, UserPlus, Sparkles, Globe, Locate
@@ -58,21 +58,43 @@ import { supabase } from '../services/supabase';
 
 export function RegisterPage() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const registerCustomer = useStore((s) => s.registerCustomer);
   const registerShopOwner = useStore((s) => s.registerShopOwner);
-  const [role, setRole] = useState<'customer' | 'shopowner'>(searchParams.get('role') as any || 'customer');
+  const registeredUsers = useStore((s) => s.registeredUsers);
+  const shopRequests = useStore((s) => s.shopRequests);
+  const loginWithGoogle = useStore((s) => s.loginWithGoogle);
+
+  const prefill = (location.state as any)?.prefill || {};
+  const isGoogleAuth = (location.state as any)?.googleAuth || false;
+
+  const [role, setRole] = useState<'customer' | 'shopowner'>(prefill.role || (searchParams.get('role') as any) || 'customer');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [form, setForm] = useState({
-    name: '', email: '', phone: '', password: '', confirmPassword: '',
-    shopName: '', shopLocation: '', shopLocationUrl: '', language: 'en',
+    name: '',
+    email: prefill.email || '',
+    phone: '',
+    password: prefill.password || '',
+    confirmPassword: prefill.password || '',
+    shopName: '',
+    shopLocation: '',
+    shopLocationUrl: '',
+    language: 'en',
   });
   const [googlePrefilled, setGooglePrefilled] = useState(false);
   const [googleUserId, setGoogleUserId] = useState<string | null>(null);
+
+  // Handle Google Auth Trigger
+  useEffect(() => {
+    if (isGoogleAuth) {
+      loginWithGoogle();
+    }
+  }, [isGoogleAuth, loginWithGoogle]);
 
   // Detect Google OAuth return and pre-fill form
   useEffect(() => {
@@ -89,7 +111,21 @@ export function RegisterPage() {
           const googleName = meta.full_name || meta.name || '';
           const googleEmail = u.email || '';
 
-          // Pre-fill the form with Google data
+          // 1. Check if user already exists
+          const existingUser = registeredUsers.find(ru => ru.email === googleEmail);
+          const existingReq = shopRequests.find(sr => sr.email === googleEmail);
+
+          if (existingUser || existingReq) {
+            toast.success(`Welcome back ${googleName}!`);
+            if (existingUser?.role === 'shopowner' || existingReq?.status === 'pending') {
+              navigate('/shop-dashboard');
+            } else {
+              navigate('/');
+            }
+            return;
+          }
+
+          // 2. If new, pre-fill the form with Google data
           setForm(prev => ({
             ...prev,
             name: googleName,
@@ -101,7 +137,7 @@ export function RegisterPage() {
           // Clear the hash from URL without reload
           window.history.replaceState(null, '', window.location.pathname + window.location.search);
 
-          toast.success(`Welcome ${googleName}! Please fill in the remaining details.`);
+          toast.success(`Welcome ${googleName}! Please fill in the remaining details to create your account.`);
         }
       } catch (err) {
         console.error('Error checking Google session:', err);
@@ -109,7 +145,7 @@ export function RegisterPage() {
     };
 
     checkGoogleReturn();
-  }, []);
+  }, [registeredUsers, shopRequests, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -83,7 +83,7 @@ export function AdminOverview() {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {statsData.map((s) => (
           <div key={s.label} className="bg-white border rounded-xl p-4 sm:p-5">
             <div className="flex items-center justify-between">
@@ -117,20 +117,25 @@ export function AdminOverview() {
       )}
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white border rounded-xl p-4 sm:p-5">
+      <div className="grid grid-cols-1 gap-6">
+        <div className="bg-white border rounded-xl p-4 sm:p-5">
           <h3 className="text-[15px] sm:text-[16px] mb-4" style={{ fontWeight: 600 }}>Revenue Trend</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={revenueTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
-              <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={(v) => v >= 1000 ? `${v / 1000}k` : `${v}`} />
-              <Tooltip formatter={(v: number, name: string) => [`Rs.${v.toLocaleString()}`, name === 'revenue' ? 'Delivered' : 'Pipeline']} />
-              <Line type="monotone" dataKey="revenue" stroke="#16a34a" strokeWidth={2.5} dot={{ fill: '#16a34a', r: 4 }} name="revenue" />
-              <Line type="monotone" dataKey="pipeline" stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 5" dot={{ fill: '#f59e0b', r: 3 }} name="pipeline" />
-            </LineChart>
-          </ResponsiveContainer>
-          <div className="flex gap-6 mt-3 justify-center text-[12px] sm:text-[13px]">
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={revenueTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `${v / 1000}k` : `${v}`} />
+                <Tooltip
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  formatter={(v: number, name: string) => [`Rs.${v.toLocaleString()}`, name === 'revenue' ? 'Delivered' : 'Pipeline']}
+                />
+                <Line type="monotone" dataKey="revenue" stroke="#16a34a" strokeWidth={3} dot={{ fill: '#16a34a', r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} name="revenue" />
+                <Line type="monotone" dataKey="pipeline" stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 5" dot={{ fill: '#f59e0b', r: 3 }} name="pipeline" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex gap-6 mt-4 justify-center text-[12px] sm:text-[13px]">
             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#16a34a]" /> Delivered</div>
             <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#f59e0b]" /> Pipeline</div>
           </div>
@@ -139,25 +144,29 @@ export function AdminOverview() {
         <div className="bg-white border rounded-xl p-4 sm:p-5">
           <h3 className="text-[15px] sm:text-[16px] mb-4" style={{ fontWeight: 600 }}>Sales by Category</h3>
           {categoryData.length > 0 ? (
-            <>
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie data={categoryData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ value }) => `${value}%`}>
-                    {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="grid grid-cols-2 gap-1 mt-2">
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <div className="h-[250px] w-full sm:w-1/2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={categoryData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} dataKey="value" stroke="none">
+                      {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-3 w-full sm:w-1/2">
                 {categoryData.map((c, i) => (
-                  <div key={c.name} className="flex items-center gap-1.5 text-[11px]">
-                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} /><span className="truncate">{c.name}</span>
+                  <div key={c.name} className="flex items-center gap-2.5 text-[13px]">
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                    <span className="text-muted-foreground truncate">{c.name}</span>
+                    <span className="ml-auto font-bold">{c.value}%</span>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           ) : (
-            <div className="h-[220px] flex items-center justify-center text-muted-foreground text-[14px]">No order data yet</div>
+            <div className="h-[250px] flex items-center justify-center text-muted-foreground text-[14px]">No order data yet</div>
           )}
         </div>
       </div>

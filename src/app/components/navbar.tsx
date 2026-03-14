@@ -344,16 +344,16 @@ export function Navbar() {
       </div>
 
       {/* Main nav */}
-      <div className="max-w-7xl mx-auto px-4 py-3">
-        <div className="flex items-center gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-emerald-600 rounded-xl flex items-center justify-center shadow-md shadow-primary/20 group-hover:shadow-lg group-hover:shadow-primary/30 transition-all duration-300 glow-primary shine-hover group-hover:scale-105">
-              <Store className="w-5 h-5 text-white" />
+          <Link to="/" className="flex items-center gap-2 sm:gap-2.5 shrink-0 group">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-primary to-emerald-600 rounded-xl flex items-center justify-center shadow-md shadow-primary/20 group-hover:shadow-lg group-hover:shadow-primary/30 transition-all duration-300 glow-primary shine-hover group-hover:scale-105">
+              <Store className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-white" />
             </div>
-            <div className="hidden sm:block">
-              <span className="text-[20px] text-gradient-primary" style={{ fontWeight: 800 }}>Kumar Store</span>
-              <span className="block text-[10px] text-muted-foreground -mt-1 tracking-wider uppercase" style={{ fontWeight: 500 }}>Wholesale & Retail</span>
+            <div className="hidden xs:block">
+              <span className="text-[16px] sm:text-[20px] text-gradient-primary leading-none" style={{ fontWeight: 800 }}>Kumar Store</span>
+              <span className="hidden sm:block text-[10px] text-muted-foreground -mt-1 tracking-wider uppercase" style={{ fontWeight: 500 }}>Wholesale & Retail</span>
             </div>
           </Link>
 
@@ -362,36 +362,36 @@ export function Navbar() {
             <div className="flex items-center bg-gray-50/80 border border-border/70 rounded-xl overflow-hidden focus-within:border-primary/40 transition-all focus-glow">
               <input
                 type="text"
-                placeholder="Search for products, brands, categories..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 px-4 py-2.5 bg-transparent outline-none text-[14px]"
+                className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-transparent outline-none text-[13px] sm:text-[14px] min-w-0"
               />
               <button
                 type="button"
                 onClick={isRecording ? stopRecording : startRecording}
-                className={`px-3 py-2.5 transition-all ${isRecording ? 'text-primary animate-pulse' : 'text-gray-400 hover:text-primary'}`}
+                className={`px-2 sm:px-3 py-2 sm:py-2.5 transition-all ${isRecording ? 'text-primary animate-pulse' : 'text-gray-400 hover:text-primary'}`}
               >
-                <Mic className="w-5 h-5" />
+                <Mic className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
               </button>
-              <button type="submit" className="px-4 py-2.5 bg-primary text-white hover:bg-primary/90 transition-all rounded-r-lg btn-press">
-                <Search className="w-4.5 h-4.5" />
+              <button type="submit" className="px-3 sm:px-4 py-2 sm:py-2.5 bg-primary text-white hover:bg-primary/90 transition-all rounded-r-lg btn-press shrink-0">
+                <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </button>
             </div>
           </form>
 
           {/* Right icons */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
             {/* Notifications */}
             {user && (
               <div className="relative">
                 <button
                   onClick={() => { setNotifDropdown(!notifDropdown); setUserDropdown(false); }}
-                  className="relative p-2.5 hover:bg-primary/5 rounded-xl transition-colors hidden sm:flex items-center"
+                  className="relative p-2 sm:p-2.5 hover:bg-primary/5 rounded-xl transition-colors hidden xs:flex items-center"
                 >
-                  <Bell className="w-5 h-5 text-gray-600 group-hover:text-primary transition-colors" />
+                  <Bell className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-gray-600 group-hover:text-primary transition-colors" />
                   {unreadCount > 0 && (
-                    <span key={unreadCount} className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-amber-500 text-white text-[11px] rounded-full flex items-center justify-center badge-bounce shadow-sm">{unreadCount}</span>
+                    <span key={unreadCount} className="absolute top-0 right-0 sm:-top-0.5 sm:-right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-amber-500 text-white text-[9px] sm:text-[11px] rounded-full flex items-center justify-center badge-bounce shadow-sm">{unreadCount}</span>
                   )}
                 </button>
                 {notifDropdown && (
@@ -404,28 +404,28 @@ export function Navbar() {
               </div>
             )}
 
-            <Link to="/wishlist" className="relative p-2.5 hover:bg-primary/5 rounded-xl transition-colors hidden sm:flex items-center gap-1.5 group btn-press">
-              <Heart className="w-5 h-5 text-gray-600 group-hover:text-primary transition-colors" />
+            <Link to="/wishlist" className="relative p-2 sm:p-2.5 hover:bg-primary/5 rounded-xl transition-colors hidden xs:flex items-center gap-1.5 group btn-press">
+              <Heart className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-gray-600 group-hover:text-primary transition-colors" />
               {wishlistLength > 0 && (
-                <span key={wishlistLength} className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-primary text-white text-[11px] rounded-full flex items-center justify-center badge-bounce shadow-sm">{wishlistLength}</span>
+                <span key={wishlistLength} className="absolute top-0 right-0 sm:-top-0.5 sm:-right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-primary text-white text-[9px] sm:text-[11px] rounded-full flex items-center justify-center badge-bounce shadow-sm">{wishlistLength}</span>
               )}
             </Link>
 
-            <Link to="/cart" className="relative p-2.5 hover:bg-primary/5 rounded-xl transition-colors flex items-center gap-1.5 group btn-press">
-              <ShoppingCart className="w-5 h-5 text-gray-600 group-hover:text-primary transition-colors" />
+            <Link to="/cart" className="relative p-2 sm:p-2.5 hover:bg-primary/5 rounded-xl transition-colors flex items-center gap-1.5 group btn-press">
+              <ShoppingCart className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-gray-600 group-hover:text-primary transition-colors" />
               {cartLength > 0 && (
-                <span key={cartLength} className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-primary text-white text-[11px] rounded-full flex items-center justify-center badge-bounce shadow-sm">{cartLength}</span>
+                <span key={cartLength} className="absolute top-0 right-0 sm:-top-0.5 sm:-right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-primary text-white text-[9px] sm:text-[11px] rounded-full flex items-center justify-center badge-bounce shadow-sm">{cartLength}</span>
               )}
-              <span className="hidden md:block text-[13px] text-gray-700 group-hover:text-primary transition-colors">Cart</span>
+              <span className="hidden lg:block text-[13px] text-gray-700 group-hover:text-primary transition-colors">Cart</span>
             </Link>
 
             {/* User */}
             <div className="relative">
               <button
                 onClick={() => { setUserDropdown(!userDropdown); setNotifDropdown(false); }}
-                className="p-2.5 hover:bg-primary/5 rounded-xl transition-colors flex items-center gap-1.5"
+                className="p-2 sm:p-2.5 hover:bg-primary/5 rounded-xl transition-colors flex items-center gap-1.5"
               >
-                <User className="w-5 h-5 text-gray-600" />
+                <User className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-gray-600" />
                 <span className="hidden md:block text-[13px] text-gray-700 max-w-[100px] truncate">
                   {user ? user.name : 'Login'}
                 </span>
@@ -436,7 +436,7 @@ export function Navbar() {
               )}
             </div>
 
-            <button onClick={() => setMobileMenu(!mobileMenu)} className="p-2.5 hover:bg-primary/5 rounded-xl md:hidden transition-colors">
+            <button onClick={() => setMobileMenu(!mobileMenu)} className="p-2 sm:p-2.5 hover:bg-primary/5 rounded-xl md:hidden transition-colors">
               {mobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
