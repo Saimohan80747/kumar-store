@@ -6,6 +6,7 @@ import { SarvamService } from '../services/sarvam';
 import { useStore } from '../store';
 import { PRODUCTS_MAP, PRODUCTS_BY_CATEGORY } from '../data';
 import { ProductCard } from './product-card';
+import { ProductReviews } from './product-reviews';
 
 // ─── Static config hoisted outside component ───
 const FEATURES = [
@@ -128,7 +129,7 @@ export function ProductDetail() {
               </div>
               <span className="text-[14px] text-muted-foreground">{product.reviews} reviews</span>
               <span className="text-[14px] text-muted-foreground">|</span>
-              <span className={`text - [14px] ${product.stock > 50 ? 'text-primary' : 'text-destructive'} `} style={{ fontWeight: 500 }}>
+              <span className={`text-[14px] ${product.stock > 50 ? 'text-primary' : 'text-destructive'}`} style={{ fontWeight: 500 }}>
                 {product.stock > 50 ? 'In Stock' : `Only ${product.stock} left`}
               </span>
             </div>
@@ -174,7 +175,7 @@ export function ProductDetail() {
               <div className="mt-8 space-y-4 p-4 bg-gradient-to-br from-gray-50 to-primary/[0.02] rounded-xl border border-primary/10">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-[13px] text-muted-foreground">MRP:</span>
-                  <span className={`text - [18px] ${priceDiff > 0 ? 'line-through text-muted-foreground' : 'text-foreground'} `} style={{ fontWeight: priceDiff > 0 ? 400 : 800 }}>Rs.{product.mrp}</span>
+                  <span className={`text-[18px] ${priceDiff > 0 ? 'line-through text-muted-foreground' : 'text-foreground'}`} style={{ fontWeight: priceDiff > 0 ? 400 : 800 }}>Rs.{product.mrp}</span>
                 </div>
                 {priceDiff > 0 && (
                   <>
@@ -202,13 +203,7 @@ export function ProductDetail() {
                     <span className="text-primary" style={{ fontWeight: 600 }}>Your shop price: Rs.{product.shopPrice}</span>
                   </div>
                 )}
-                {!isShop && user?.role === 'customer' && priceDiff > 0 && (
-                  <div className="mt-2 flex items-center gap-2 text-[13px]">
-                    <Tag className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-primary" style={{ fontWeight: 600 }}>Customer Discount Applied</span>
-                    <span className="text-muted-foreground">You're getting a special discount!</span>
-                  </div>
-                )}
+                {/* Removed "Customer Discount Applied" text (requested) */}
                 <p className="text-[12px] text-muted-foreground mt-2">Inclusive of all taxes</p>
               </div>
             ) : (
@@ -322,6 +317,9 @@ export function ProductDetail() {
           <p className="text-[14px] text-muted-foreground leading-relaxed">{product.description}</p>
         </div>
       </div>
+
+      {/* Reviews (Supabase-backed) */}
+      <ProductReviews productId={product.id} />
 
       {/* Related */}
       {related.length > 0 && (

@@ -13,14 +13,8 @@ export function MySavings() {
 
   // Compute savings from real delivered order data
   const savingsData = useMemo(() => {
-    // Broad matching: match by userId, userName, or email
-    const userOrders = orders.filter(
-      (o) => o.status === 'delivered' && (
-        o.userId === user.id ||
-        (o.userName === user.name && o.userRole === 'customer') ||
-        (user.email && o.userId && o.userId === user.id)
-      )
-    );
+    // Strict matching: only orders linked to the current user's id
+    const userOrders = orders.filter((o) => o.status === 'delivered' && o.userId === user.id);
 
     let lifetimeSavings = 0;
     let monthSavings = 0;
@@ -92,7 +86,7 @@ export function MySavings() {
     }));
 
     return { lifetimeSavings: Math.round(lifetimeSavings), monthSavings: Math.round(monthSavings), avgPerOrder, chartData, tableRows, totalOrders: userOrders.length };
-  }, [orders, user.id, user.name, user.email]);
+  }, [orders, user.id]);
 
   const summaryCards = [
     {

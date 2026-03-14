@@ -104,12 +104,7 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
                 <span className="text-amber-600" style={{ fontWeight: 600 }}>Rs.{product.customerPrice}</span>
               </div>
             )}
-            {isLoggedIn && !isShop && user?.role === 'customer' && (
-              <div className="mt-1.5 flex items-center gap-1 text-[11px]">
-                <Tag className="w-3 h-3 text-primary" />
-                <span className="text-primary" style={{ fontWeight: 500 }}>Customer Discount Applied</span>
-              </div>
-            )}
+            {/* Removed "Customer Discount Applied" label (requested) */}
           </div>
         ) : (
           <div className="mt-2">

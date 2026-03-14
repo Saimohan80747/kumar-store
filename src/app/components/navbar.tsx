@@ -116,6 +116,11 @@ const UserDropdown = memo(function UserDropdown({ onClose }: { onClose: () => vo
               <Package className="w-4 h-4 text-muted-foreground" /> My Orders
             </Link>
             {user.role === 'customer' && (
+              <Link to="/account" onClick={onClose} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-primary/5 text-[14px] transition-colors">
+                <User className="w-4 h-4 text-muted-foreground" /> Profile
+              </Link>
+            )}
+            {user.role === 'customer' && (
               <Link to="/savings" onClick={onClose} className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-primary/5 text-[14px] transition-colors">
                 <TrendingUp className="w-4 h-4 text-muted-foreground" /> My Savings
               </Link>

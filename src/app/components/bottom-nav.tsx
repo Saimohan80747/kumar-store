@@ -24,7 +24,7 @@ export function BottomNav() {
     if (item.path === '/account') {
       if (!user) return '/login';
       if (user.role === 'shopowner') return '/shop-dashboard';
-      return '/savings';
+      return '/account';
     }
     if (item.path === '/orders' && !user) return '/login';
     return item.path;

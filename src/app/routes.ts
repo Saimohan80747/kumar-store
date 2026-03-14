@@ -16,6 +16,7 @@ const OrderTrackingPage = lazy(() => import('./components/order-tracking').then(
 const ShopDashboard = lazy(() => import('./components/shop-dashboard').then(m => ({ default: m.ShopDashboard })));
 const WishlistPage = lazy(() => import('./components/wishlist-page').then(m => ({ default: m.WishlistPage })));
 const MySavings = lazy(() => import('./components/my-savings').then(m => ({ default: m.MySavings })));
+const AccountPage = lazy(() => import('./components/account-page').then(m => ({ default: m.AccountPage })));
 
 // Lazy-loaded admin pages (heavy: recharts, complex UI — only loaded when admin visits)
 const AdminLayout = lazy(() => import('./components/admin-layout').then(m => ({ default: m.AdminLayout })));
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
       { path: 'shop-dashboard', Component: ShopDashboard },
       { path: 'wishlist', Component: WishlistPage },
       { path: 'savings', Component: MySavings },
+      { path: 'account', Component: AccountPage },
     ],
   },
   // Admin panel (separate layout, auto-authenticated)
