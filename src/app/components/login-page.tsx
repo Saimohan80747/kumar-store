@@ -92,7 +92,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-start lg:items-center justify-center py-6 sm:py-10 px-4 relative overflow-x-hidden">
+    <div className="min-h-[85vh] flex items-start lg:items-center justify-center py-6 sm:py-10 px-4 relative">
       {/* Animated gradient orbs */}
       <div className="orb orb-primary w-96 h-96 -top-32 -right-32 animate-float-slow" />
       <div className="orb orb-emerald w-72 h-72 -bottom-24 -left-24 animate-float-slow" style={{ animationDelay: '2s' }} />

@@ -153,16 +153,16 @@
 
   body {
     @apply bg-background text-foreground;
-    overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
-    overflow-x: hidden;
     width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
   }
 
   html {
     font-size: var(--font-size);
-    overflow-x: hidden;
     width: 100%;
+    height: auto;
   }
 
   h1 {
@@ -275,7 +275,6 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
 }
 

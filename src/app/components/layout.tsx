@@ -14,7 +14,7 @@ export function Layout() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 via-white to-gray-50/50 overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 via-white to-gray-50/50">
       <Toaster position="top-right" richColors closeButton />
       <Navbar />
       <main className="flex-1 pb-16 md:pb-0">

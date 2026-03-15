@@ -356,8 +356,8 @@ export function RegisterPage() {
   const strengthColors = ['', 'bg-red-400', 'bg-amber-400', 'bg-primary'];
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center py-10 px-4">
-      <div className="w-full max-w-lg">
+    <div className="min-h-[85vh] flex items-start lg:items-center justify-center py-6 sm:py-10 px-4 relative">
+      <div className="w-full max-w-lg relative z-10 pb-8">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
