@@ -156,13 +156,11 @@
     -webkit-tap-highlight-color: transparent;
     width: 100%;
     min-height: 100vh;
-    overflow-x: hidden;
   }
 
   html {
     font-size: var(--font-size);
     width: 100%;
-    height: auto;
   }
 
   h1 {
@@ -251,31 +249,15 @@
   }
 }
 
-/* ─── Custom Scrollbar ─── */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 99px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
-}
-
 /* ─── Global Polish ─── */
 html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  /* overflow-x: hidden removed to fix trackpad scrolling issues */
 }
 
 /* Better focus rings */
