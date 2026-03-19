@@ -71,10 +71,11 @@ export function AdminLayout() {
       return;
     }
 
-    // Get current admin password from localStorage or use default
-    const currentAdminPassword = localStorage.getItem('admin_password') || ADMIN_PASSWORD;
+    const localAdminPassword = localStorage.getItem('admin_password');
+    const validPasswords = [localAdminPassword, import.meta.env.VITE_ADMIN_PASSWORD, ADMIN_PASSWORD]
+      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
 
-    if (password === currentAdminPassword) {
+    if (validPasswords.includes(password)) {
       setAuthenticated(true);
       sessionStorage.setItem('kumarstore_admin_auth', 'true');
       useStore.setState({
