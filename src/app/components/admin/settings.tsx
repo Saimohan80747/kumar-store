@@ -132,31 +132,32 @@ function SecuritySettings() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleUpdatePassword = () => {
-    // Get stored admin password
-    const storedPassword = localStorage.getItem('admin_password') || 'kumarstore@admin2026';
+    const enteredCurrentPassword = currentPassword.trim();
+    const enteredNewPassword = newPassword.trim();
+    const enteredConfirmPassword = confirmPassword.trim();
+    const localAdminPassword = localStorage.getItem('admin_password');
+    const validCurrentPasswords = [localAdminPassword, import.meta.env.VITE_ADMIN_PASSWORD, 'kumarstore@admin2026']
+      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      .map((value) => value.trim());
 
-    if (currentPassword !== storedPassword) {
+    if (!validCurrentPasswords.includes(enteredCurrentPassword)) {
       toast.error('Current password is incorrect');
       return;
     }
 
-    if (newPassword.length < 6) {
+    if (enteredNewPassword.length < 6) {
       toast.error('New password must be at least 6 characters');
       return;
     }
 
-    if (newPassword !== confirmPassword) {
+    if (enteredNewPassword !== enteredConfirmPassword) {
       toast.error('New passwords do not match');
       return;
     }
 
-    // Store new password
-    localStorage.setItem('admin_password', newPassword);
-
-    // Clear admin session so user must re-login with new password
+    localStorage.setItem('admin_password', enteredNewPassword);
     sessionStorage.removeItem('kumarstore_admin_auth');
 
-    // Clear form
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');

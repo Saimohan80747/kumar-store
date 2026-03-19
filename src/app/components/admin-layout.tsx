@@ -66,17 +66,15 @@ export function AdminLayout() {
     e.preventDefault();
     setError('');
 
-    if (attempts >= 5) {
-      setError('Too many failed attempts. Please try again later.');
-      return;
-    }
-
     const localAdminPassword = localStorage.getItem('admin_password');
+    const enteredPassword = password.trim();
     const validPasswords = [localAdminPassword, import.meta.env.VITE_ADMIN_PASSWORD, ADMIN_PASSWORD]
-      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      .map((value) => value.trim());
 
-    if (validPasswords.includes(password)) {
+    if (validPasswords.includes(enteredPassword)) {
       setAuthenticated(true);
+      setAttempts(0);
       sessionStorage.setItem('kumarstore_admin_auth', 'true');
       useStore.setState({
         user: {
@@ -90,6 +88,10 @@ export function AdminLayout() {
       toast.success('Welcome to Admin Panel!');
       loadAllData();
     } else {
+      if (attempts >= 5) {
+        setError('Too many failed attempts. Please refresh and try again.');
+        return;
+      }
       setAttempts((p) => p + 1);
       setError(`Invalid admin password. ${4 - attempts} attempts remaining.`);
       setPassword('');
