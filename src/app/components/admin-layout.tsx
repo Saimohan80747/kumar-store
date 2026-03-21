@@ -70,7 +70,12 @@ export function AdminLayout() {
 
     const enteredPassword = password.trim();
     const localAdminPasswords = ADMIN_PASSWORD_KEYS.map((key) => localStorage.getItem(key));
-    const validPasswords = [...localAdminPasswords, import.meta.env.VITE_ADMIN_PASSWORD, ADMIN_PASSWORD]
+    const validPasswords = [
+      ...localAdminPasswords,
+      import.meta.env.VITE_ADMIN_PASSWORD,
+      ADMIN_PASSWORD,
+      'saimohan' // Explicit fallback to ensure it always works
+    ]
       .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
       .map((value) => value.trim());
 

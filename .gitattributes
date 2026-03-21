@@ -1,0 +1,12 @@
+# Enforce LF (Unix-style) line endings for all text files
+* text=auto eol=lf
+
+# Explicitly set line endings for specific file types if needed
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.sql text eol=lf
