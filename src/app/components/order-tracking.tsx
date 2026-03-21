@@ -1,5 +1,5 @@
-import { useParams, useNavigate, Navigate } from 'react-router';
-import { motion } from 'motion/react';
+import { useParams, useNavigate, Navigate, useLocation } from 'react-router';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   CheckCircle2,
   Package,
@@ -13,8 +13,11 @@ import {
   Download,
   Star,
   ShoppingBag,
+  MapPin,
+  PartyPopper,
 } from 'lucide-react';
 import { useStore } from '../store';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 const TRACKING_STEPS = [
@@ -37,9 +40,21 @@ function getStepIndex(status: string): number {
 export function OrderTrackingPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const orders = useStore((s) => s.orders);
   const user = useStore((s) => s.user);
   const addToCart = useStore((s) => s.addToCart);
+
+  const [showConfetti, setShowConfetti] = useState(location.state?.newOrder || false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    if (showConfetti) {
+      const timer = setTimeout(() => setShowConfetti(false), 5000);
+      timersRef.current.push(timer);
+    }
+    return () => timersRef.current.forEach(clearTimeout);
+  }, [showConfetti]);
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -117,14 +132,79 @@ export function OrderTrackingPage() {
           : 'text-amber-600 bg-amber-50';
 
   return (
-    <div className="py-6 max-w-3xl mx-auto px-4">
+    <div className="py-6 max-w-3xl mx-auto px-4 relative">
+      {/* Confetti overlay */}
+      <AnimatePresence>
+        {showConfetti && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1 }}
+            className="fixed inset-0 pointer-events-none z-50 flex items-start justify-center overflow-hidden"
+          >
+            {[...Array(30)].map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{
+                  y: -20,
+                  x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 800) - 400,
+                  rotate: 0,
+                  opacity: 1,
+                }}
+                animate={{
+                  y: typeof window !== 'undefined' ? window.innerHeight + 50 : 900,
+                  rotate: Math.random() * 720 - 360,
+                  opacity: 0,
+                }}
+                transition={{
+                  duration: 2 + Math.random() * 2,
+                  delay: Math.random() * 0.8,
+                  ease: 'easeOut',
+                }}
+                className="absolute w-3 h-3 rounded-sm"
+                style={{
+                  backgroundColor: ['#16a34a', '#22c55e', '#fbbf24', '#f97316', '#ef4444', '#8b5cf6', '#3b82f6'][
+                    i % 7
+                  ],
+                }}
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Success header for new orders */}
+      {location.state?.newOrder && (
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', damping: 15 }}
+          className="text-center mb-8"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', delay: 0.2 }}
+            className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4"
+          >
+            <PartyPopper className="w-8 h-8 text-primary" />
+          </motion.div>
+          <h1 className="text-[24px] text-gray-900" style={{ fontWeight: 800 }}>
+            Order Placed Successfully!
+          </h1>
+          <p className="text-muted-foreground text-[14px] mt-1">Thank you for shopping with us.</p>
+        </motion.div>
+      )}
+
       {/* Back button */}
-      <button
-        onClick={() => navigate('/orders')}
-        className="flex items-center gap-2 text-[14px] text-muted-foreground hover:text-gray-900 transition-colors mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to My Orders
-      </button>
+      {!location.state?.newOrder && (
+        <button
+          onClick={() => navigate('/orders')}
+          className="flex items-center gap-2 text-[14px] text-muted-foreground hover:text-gray-900 transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to My Orders
+        </button>
+      )}
 
       {/* Order header */}
       <motion.div
@@ -165,6 +245,29 @@ export function OrderTrackingPage() {
             <p className="text-muted-foreground mb-0.5">Est. Delivery</p>
             <p style={{ fontWeight: 500 }}>{order.status === 'delivered' ? 'Delivered' : estDateStr.split(',').slice(0, 2).join(',')}</p>
           </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px]">
+          <div>
+            <p className="text-muted-foreground mb-1 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5" /> Delivery Address
+            </p>
+            {order.deliveryLocationUrl ? (
+              <a href={order.deliveryLocationUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" style={{ fontWeight: 500 }}>
+                {order.deliveryAddress}
+              </a>
+            ) : (
+              <p style={{ fontWeight: 500 }}>{order.deliveryAddress}</p>
+            )}
+          </div>
+          {order.deliverySlot && (
+            <div>
+              <p className="text-muted-foreground mb-1 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" /> Delivery Slot
+              </p>
+              <p className="capitalize" style={{ fontWeight: 500 }}>{order.deliverySlot}</p>
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -354,15 +457,24 @@ export function OrderTrackingPage() {
           className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors text-[15px]"
           style={{ fontWeight: 600 }}
         >
-          <RotateCcw className="w-4 h-4" /> Buy Again
+          <RotateCcw className="w-4 h-4" /> Reorder Items
         </button>
         <button
-          onClick={() => toast.success('Invoice downloaded!')}
+          onClick={() => navigate('/')}
           className="flex-1 flex items-center justify-center gap-2 py-3.5 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-[15px]"
           style={{ fontWeight: 600 }}
         >
-          <Download className="w-4 h-4" /> Download Invoice
+          <Home className="w-4 h-4" /> Return to Home
         </button>
+        {!location.state?.newOrder && (
+          <button
+            onClick={() => toast.success('Invoice downloaded!')}
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-[15px]"
+            style={{ fontWeight: 600 }}
+          >
+            <Download className="w-4 h-4" /> Invoice
+          </button>
+        )}
       </motion.div>
 
       {/* Rating (only for delivered) */}

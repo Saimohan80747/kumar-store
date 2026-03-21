@@ -178,7 +178,7 @@ interface AppState {
   toggleWishlist: (productId: string) => void;
 
   // Orders
-  placeOrder: (paymentMethod: string, deliveryFee: number, deliveryAddress?: string, deliveryLocationUrl?: string, couponCode?: string, couponDiscount?: number) => Promise<void>;
+  placeOrder: (paymentMethod: string, deliveryFee: number, deliveryAddress?: string, deliveryLocationUrl?: string, couponCode?: string, couponDiscount?: number, deliverySlot?: string) => Promise<void>;
   acceptOrder: (orderId: string) => { success: boolean; message: string };
   rejectOrder: (orderId: string) => void;
   cancelOrder: (orderId: string) => void;
@@ -627,7 +627,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   // ─── Orders ───
-  placeOrder: async (paymentMethod, deliveryFee, deliveryAddress, deliveryLocationUrl, couponCode, couponDiscount) => {
+  placeOrder: async (paymentMethod, deliveryFee, deliveryAddress, deliveryLocationUrl, couponCode, couponDiscount, deliverySlot) => {
     const { cart, user, orders } = get();
     const subtotal = get().getCartTotal();
     // Apply coupon discount if present, then add delivery fee
@@ -646,6 +646,7 @@ export const useStore = create<AppState>((set, get) => ({
       userId: user?.id,
       deliveryAddress: deliveryAddress || undefined,
       deliveryLocationUrl: deliveryLocationUrl || undefined,
+      deliverySlot: deliverySlot || undefined,
       couponCode: couponCode || undefined,
       couponDiscount: couponDiscount || undefined,
     };

@@ -114,31 +114,24 @@ export function CheckoutPage() {
     // Build the order object before clearing cart
     const fullAddress = houseNumber.trim() ? `${houseNumber.trim()}, ${address}` : address;
     try {
-      await placeOrder(paymentMethod, delivery, fullAddress, deliveryLocationUrl, couponCode, couponDiscount || undefined);
+      await placeOrder(paymentMethod, delivery, fullAddress, deliveryLocationUrl, couponCode, couponDiscount || undefined, deliverySlot);
       // Reconstruct the placed order from store's latest
       const latestOrders = useStore.getState().orders;
       const justPlaced = latestOrders[0];
       if (justPlaced) {
-        setPlacedOrder(justPlaced);
+        toast.success('Order placed successfully!');
+        navigate(`/orders/${justPlaced.id}`, { 
+          replace: true,
+          state: { newOrder: true } 
+        });
       }
-      toast.success('Order placed successfully!');
     } catch {
       toast.error('Failed to place order. Please try again.');
       setIsPlacing(false);
     }
   };
 
-  if (placedOrder) {
-    return (
-      <OrderConfirmation
-        order={placedOrder}
-        deliveryAddress={houseNumber.trim() ? `${houseNumber.trim()}, ${address}` : address}
-        deliverySlot={deliverySlot}
-      />
-    );
-  }
-
-  if (cart.length === 0) {
+  if (cart.length === 0 && !isPlacing) {
     return <Navigate to="/cart" replace />;
   }
 

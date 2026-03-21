@@ -1,13 +1,16 @@
-import { Outlet, Navigate, Link } from 'react-router';
+import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router';
 import { Navbar } from './navbar';
 import { Footer } from './footer';
 import { BottomNav } from './bottom-nav';
 import { Toaster } from 'sonner';
 import { useStore } from '../store';
-import { ShieldAlert, Lock, Home, PhoneCall } from 'lucide-react';
+import { ShieldAlert, Lock, Home, PhoneCall, LogOut } from 'lucide-react';
 
 export function Layout() {
   const user = useStore((s) => s.user);
+  const logout = useStore((s) => s.logout);
+  const location = useLocation();
+  const navigate = useNavigate();
   const isLocalBlocked = localStorage.getItem('admin_account_blocked') === 'true';
 
   // Redirect admin users away from storefront
@@ -16,7 +19,14 @@ export function Layout() {
   }
 
   // Global block for both DB-blocked users and locally-blocked admins
-  if (user?.blocked || isLocalBlocked) {
+  // We allow the home page ('/') to be visible so the "Return to Home" button works,
+  // but block all other storefront routes.
+  if ((user?.blocked || isLocalBlocked) && location.pathname !== '/') {
+    const handleLogout = async () => {
+      await logout();
+      navigate('/');
+    };
+
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-red-100 overflow-hidden">
@@ -58,17 +68,28 @@ export function Layout() {
               Contact Support
             </button>
             
-            <button 
-              onClick={() => window.location.href = '/'}
-              className="w-full mt-2 py-3 text-slate-500 font-medium hover:text-slate-700 transition-colors flex items-center justify-center gap-2"
-            >
-              <Home className="w-4 h-4" /> Return to Home
-            </button>
+            {user ? (
+              <button 
+                onClick={handleLogout}
+                className="w-full mt-2 py-3 text-slate-500 font-medium hover:text-slate-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4" /> Sign Out & Exit
+              </button>
+            ) : (
+              <Link 
+                to="/"
+                className="w-full mt-2 py-3 text-slate-500 font-medium hover:text-slate-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <Home className="w-4 h-4" /> Return to Home
+              </Link>
+            )}
           </div>
         </div>
       </div>
     );
   }
+
+  const isCartPage = location.pathname === '/cart';
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 via-white to-gray-50/50">
@@ -79,10 +100,12 @@ export function Layout() {
           <Outlet />
         </div>
       </main>
-      <div className="hidden md:block">
-        <Footer />
-      </div>
-      <BottomNav />
+      {!isCartPage && (
+        <div className="hidden md:block">
+          <Footer />
+        </div>
+      )}
+      {!isCartPage && <BottomNav />}
     </div>
   );
 }
