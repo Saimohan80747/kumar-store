@@ -39,7 +39,13 @@ export function AdminLayout() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [attempts, setAttempts] = useState(0);
+  const [attempts, setAttempts] = useState(() => {
+    const saved = localStorage.getItem('admin_login_attempts');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [isBlocked, setIsBlocked] = useState(() => {
+    return localStorage.getItem('admin_account_blocked') === 'true';
+  });
   const pendingCount = shopRequests.filter((r) => r.status === 'pending').length;
   const pendingProductReqs = productRequests.filter((r) => r.status === 'pending').length;
 
@@ -68,6 +74,11 @@ export function AdminLayout() {
     e.preventDefault();
     setError('');
 
+    if (isBlocked) {
+      setError('This admin account has been permanently blocked due to too many failed attempts.');
+      return;
+    }
+
     const enteredPassword = password.trim();
     const localAdminPasswords = ADMIN_PASSWORD_KEYS.map((key) => localStorage.getItem(key));
     const validPasswords = [
@@ -82,6 +93,9 @@ export function AdminLayout() {
     if (validPasswords.includes(enteredPassword)) {
       setAuthenticated(true);
       setAttempts(0);
+      localStorage.removeItem('admin_login_attempts');
+      localStorage.removeItem('admin_account_blocked');
+      setIsBlocked(false);
       sessionStorage.setItem('kumarstore_admin_auth', 'true');
       useStore.setState({
         user: {
@@ -95,12 +109,17 @@ export function AdminLayout() {
       toast.success('Welcome to Admin Panel!');
       loadAllData();
     } else {
-      if (attempts >= 5) {
-        setError('Too many failed attempts. Please refresh and try again.');
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      localStorage.setItem('admin_login_attempts', newAttempts.toString());
+
+      if (newAttempts >= 5) {
+        setIsBlocked(true);
+        localStorage.setItem('admin_account_blocked', 'true');
+        setError('Too many failed attempts. This account is now blocked.');
         return;
       }
-      setAttempts((p) => p + 1);
-      setError(`Invalid admin password. ${4 - attempts} attempts remaining.`);
+      setError(`Invalid admin password. ${5 - newAttempts} attempts remaining.`);
       setPassword('');
     }
   };
@@ -167,13 +186,13 @@ export function AdminLayout() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                  placeholder="Enter admin password"
-                  className="flex-1 px-3 py-3.5 bg-transparent outline-none text-[14px] text-white placeholder:text-slate-500"
+                  placeholder={isBlocked ? "Account Blocked" : "Enter admin password"}
+                  className="flex-1 px-3 py-3.5 bg-transparent outline-none text-[14px] text-white placeholder:text-slate-500 disabled:opacity-50"
                   autoFocus
-                  disabled={attempts >= 5}
+                  disabled={isBlocked}
                   required
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="pr-4 hover:opacity-70 transition-opacity">
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="pr-4 hover:opacity-70 transition-opacity disabled:opacity-30" disabled={isBlocked}>
                   {showPassword ? <EyeOff className="w-4 h-4 text-slate-500" /> : <Eye className="w-4 h-4 text-slate-500" />}
                 </button>
               </div>
@@ -181,11 +200,12 @@ export function AdminLayout() {
 
             <button
               type="submit"
-              disabled={attempts >= 5}
+              disabled={isBlocked}
               className="w-full py-3.5 text-white rounded-xl transition-all flex items-center justify-center gap-2.5 text-[15px] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-600/25 hover:shadow-xl hover:shadow-emerald-600/30 active:scale-[0.98]"
               style={{ fontWeight: 600, background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' }}
             >
-              <Shield className="w-4.5 h-4.5" /> Access Admin Panel
+              {isBlocked ? <Lock className="w-4.5 h-4.5" /> : <Shield className="w-4.5 h-4.5" />}
+              {isBlocked ? "Account Blocked" : "Access Admin Panel"}
             </button>
 
             {/* Security notice */}
