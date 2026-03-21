@@ -10,7 +10,7 @@ import { Toaster } from 'sonner';
 import { toast } from 'sonner';
 
 // The admin password — change this to your own secret password
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'kumarstore@admin2026';
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'saimohan';
 
 const ADMIN_PASSWORD_KEYS = ['admin_password', 'kumar_admin_password', 'adminPassword'];
 

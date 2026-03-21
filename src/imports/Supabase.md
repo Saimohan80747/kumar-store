@@ -394,7 +394,7 @@ File: `/src/app/store.ts`
 ### 7.5 Admin Authentication
 ```
 1. Navigate to /admin
-2. Password gate: "kumarstore@admin2026" (5-attempt lockout)
+2. Password gate: "saimohan" (5-attempt lockout)
 3. On success: login({ id: 'admin-1', role: 'admin', ... })
 4. Admin has NO link from main storefront navbar
 ```
@@ -472,7 +472,7 @@ When the app loads for the first time:
 - Visit `/login` -> use demo credentials to sign in
 - Customer: `priya@gmail.com` / `password123`
 - Shop Owner: `raj@kirana.com` / `password123`
-- Admin: Navigate to `/admin` -> password: `kumarstore@admin2026`
+- Admin: Navigate to `/admin` -> password: `saimohan`
 - Place an order -> refresh page -> order persists
 - Register new user -> refresh -> user persists
 - Admin approve shop owner -> shop owner can now sign in
@@ -830,7 +830,7 @@ ON CONFLICT (slug) DO NOTHING;
 | KV helper | `/supabase/functions/server/kv_store.tsx` | `import * as kv from './kv_store.tsx'` |
 | Supabase config | `/utils/supabase/info.tsx` | `import { projectId, publicAnonKey }` |
 | Routes | `/src/app/routes.ts` | React Router with Layout + AdminLayout |
-| Admin password | `/src/app/components/admin-layout.tsx` | `kumarstore@admin2026` |
+| Admin password | `/src/app/components/admin-layout.tsx` | `saimohan` |
 | Customer demo | Login page | `priya@gmail.com` / `password123` |
 | Shop owner demo | Login page | `raj@kirana.com` / `password123` |
 | Session storage | Browser localStorage | Key: `user` (JSON) |

@@ -220,7 +220,7 @@ app.post(`${PREFIX}/migrate`, async (c) => {
     let adminPasswordUpdated = false;
     if (admin && !admin.password.includes(":")) {
       // Password is still plain text (no ":" separator used by our hash format)
-      const hashed = await hashPassword("kumarstore@admin2026");
+      const hashed = await hashPassword("saimohan");
       await db.from("kumar_shop_users").update({ password: hashed }).eq("id", admin.id);
       adminPasswordUpdated = true;
     }
@@ -271,7 +271,7 @@ app.post(`${PREFIX}/init`, async (c) => {
     // Hash seed passwords
     const custPass = await hashPassword("password123");
     const shopPass = await hashPassword("password123");
-    const adminPass = await hashPassword("kumarstore@admin2026");
+    const adminPass = await hashPassword("saimohan");
 
     // Seed customer_users
     const { error: custErr } = await db.from("kumar_customer_users").upsert([

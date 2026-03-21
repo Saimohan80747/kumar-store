@@ -138,7 +138,7 @@ function SecuritySettings() {
     const enteredNewPassword = newPassword.trim();
     const enteredConfirmPassword = confirmPassword.trim();
     const localAdminPasswords = ADMIN_PASSWORD_KEYS.map((key) => localStorage.getItem(key));
-    const validCurrentPasswords = [...localAdminPasswords, import.meta.env.VITE_ADMIN_PASSWORD, 'kumarstore@admin2026']
+    const validCurrentPasswords = [...localAdminPasswords, import.meta.env.VITE_ADMIN_PASSWORD, 'saimohan']
       .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
       .map((value) => value.trim());
 
