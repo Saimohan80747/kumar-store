@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 // The admin password — change this to your own secret password
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'kumarstore@admin2026';
 
+const ADMIN_PASSWORD_KEYS = ['admin_password', 'kumar_admin_password', 'adminPassword'];
+
 const sidebarItems = [
   { path: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true },
   { path: '/admin/orders', label: 'Orders', icon: ShoppingCart },
@@ -66,9 +68,9 @@ export function AdminLayout() {
     e.preventDefault();
     setError('');
 
-    const localAdminPassword = localStorage.getItem('admin_password');
     const enteredPassword = password.trim();
-    const validPasswords = [localAdminPassword, import.meta.env.VITE_ADMIN_PASSWORD, ADMIN_PASSWORD]
+    const localAdminPasswords = ADMIN_PASSWORD_KEYS.map((key) => localStorage.getItem(key));
+    const validPasswords = [...localAdminPasswords, import.meta.env.VITE_ADMIN_PASSWORD, ADMIN_PASSWORD]
       .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
       .map((value) => value.trim());
 

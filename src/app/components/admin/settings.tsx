@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Save, Store, Mail, Phone, MapPin, Globe, Bell, Shield, Palette } from 'lucide-react';
 import { toast } from 'sonner';
 
+const ADMIN_PASSWORD_KEYS = ['admin_password', 'kumar_admin_password', 'adminPassword'];
+
 export function AdminSettings() {
   const [activeSection, setActiveSection] = useState('general');
 
@@ -135,8 +137,8 @@ function SecuritySettings() {
     const enteredCurrentPassword = currentPassword.trim();
     const enteredNewPassword = newPassword.trim();
     const enteredConfirmPassword = confirmPassword.trim();
-    const localAdminPassword = localStorage.getItem('admin_password');
-    const validCurrentPasswords = [localAdminPassword, import.meta.env.VITE_ADMIN_PASSWORD, 'kumarstore@admin2026']
+    const localAdminPasswords = ADMIN_PASSWORD_KEYS.map((key) => localStorage.getItem(key));
+    const validCurrentPasswords = [...localAdminPasswords, import.meta.env.VITE_ADMIN_PASSWORD, 'kumarstore@admin2026']
       .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
       .map((value) => value.trim());
 
@@ -155,7 +157,7 @@ function SecuritySettings() {
       return;
     }
 
-    localStorage.setItem('admin_password', enteredNewPassword);
+    ADMIN_PASSWORD_KEYS.forEach((key) => localStorage.setItem(key, enteredNewPassword));
     sessionStorage.removeItem('kumarstore_admin_auth');
 
     setCurrentPassword('');
