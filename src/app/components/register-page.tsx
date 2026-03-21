@@ -150,6 +150,23 @@ export function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Check global block status
+    const isLocalBlocked = localStorage.getItem('admin_account_blocked') === 'true';
+    if (isLocalBlocked) {
+      toast.error('This device has been restricted from creating new accounts due to security violations.', { duration: 5000 });
+      return;
+    }
+
+    // Check if the email or phone is already blocked in the database
+    const isBlockedUser = registeredUsers.some(u => 
+      u.blocked && (u.email.toLowerCase() === form.email.trim().toLowerCase() || u.phone.trim() === form.phone.trim())
+    );
+
+    if (isBlockedUser) {
+      toast.error('This email or phone number is permanently blocked from our platform.', { duration: 5000 });
+      return;
+    }
+
     // Validation
     if (!form.name.trim()) { toast.error('Please enter your full name'); return; }
     if (!form.email.trim()) { toast.error('Please enter your email address'); return; }
