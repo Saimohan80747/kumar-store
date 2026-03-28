@@ -13,7 +13,7 @@ export type GeocodedAddress = { address: string; houseNumber?: string };
 async function reverseGeocode(lat: number, lon: number): Promise<GeocodedAddress> {
   // 1. Try Google Maps Geocoding API
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-  if (apiKey) {
+  if (apiKey && apiKey !== 'YOUR_GOOGLE_MAPS_API_KEY') {
     try {
       const res = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${apiKey}`
@@ -45,14 +45,21 @@ async function reverseGeocode(lat: number, lon: number): Promise<GeocodedAddress
           return { address, houseNumber: houseNumber || undefined };
         }
       }
-    } catch { /* Google failed, try fallback */ }
+    } catch (err) {
+      console.error('Google Geocoding failed:', err);
+    }
   }
 
-  // 2. Fallback: OpenStreetMap Nominatim
+  // 2. Fallback: OpenStreetMap Nominatim (More reliable for free usage)
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
-      { headers: { 'Accept-Language': 'en' } }
+      {
+        headers: {
+          'Accept-Language': 'en',
+          'User-Agent': 'KumarStore/1.0'
+        }
+      }
     );
     if (res.ok) {
       const data = await res.json();
@@ -71,7 +78,9 @@ async function reverseGeocode(lat: number, lon: number): Promise<GeocodedAddress
       }
       if (data.display_name) return { address: data.display_name };
     }
-  } catch { /* Nominatim also failed */ }
+  } catch (err) {
+    console.error('Nominatim Geocoding failed:', err);
+  }
 
   return { address: `Lat ${lat.toFixed(6)}, Lng ${lon.toFixed(6)}` };
 }
@@ -212,27 +221,49 @@ export function CheckoutPage() {
 
               {/* Embedded Google Map preview */}
               {detectedCoords && (
-                <div className="mt-3 relative rounded-xl overflow-hidden border border-primary/20 shadow-sm">
-                  <iframe
-                    title="Delivery location"
-                    width="100%"
-                    height="220"
-                    style={{ border: 0 }}
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&q=${detectedCoords.lat},${detectedCoords.lng}&zoom=16`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => { setDetectedCoords(null); setDeliveryLocationUrl(undefined); }}
-                    className="absolute top-2 right-2 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-red-50 transition-colors group"
-                    title="Remove pin"
-                  >
-                    <X className="w-3.5 h-3.5 text-gray-500 group-hover:text-red-500" />
-                  </button>
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/50 to-transparent p-3">
+                <div className="mt-3 relative rounded-xl overflow-hidden border border-border/60 shadow-sm">
+                  <div className="w-full h-[220px] bg-slate-50 relative">
+                    {import.meta.env.VITE_GOOGLE_MAPS_API_KEY && import.meta.env.VITE_GOOGLE_MAPS_API_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY' ? (
+                      <iframe
+                        title="Delivery location"
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&q=${detectedCoords.lat},${detectedCoords.lng}&zoom=16`}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+                          <MapPin className="w-6 h-6 text-primary" />
+                        </div>
+                        <p className="text-[13px] font-semibold text-slate-700">Location Pinned</p>
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                          Latitude: {detectedCoords.lat.toFixed(4)}, Longitude: {detectedCoords.lng.toFixed(4)}
+                        </p>
+                        <a 
+                          href={`https://www.google.com/maps/search/?api=1&query=${detectedCoords.lat},${detectedCoords.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 text-[12px] text-primary hover:underline font-medium"
+                        >
+                          View on Google Maps
+                        </a>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { setDetectedCoords(null); setDeliveryLocationUrl(undefined); }}
+                      className="absolute top-2 right-2 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-red-50 transition-colors group z-10"
+                      title="Remove pin"
+                    >
+                      <X className="w-3.5 h-3.5 text-gray-500 group-hover:text-red-500" />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/50 to-transparent p-3 pointer-events-none">
                     <p className="text-white text-[11px] flex items-center gap-1" style={{ fontWeight: 500 }}>
-                      <MapPin className="w-3 h-3" /> Location pinned on map
+                      <MapPin className="w-3 h-3" /> Location pinned
                     </p>
                   </div>
                 </div>

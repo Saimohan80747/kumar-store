@@ -5,6 +5,7 @@ import { BottomNav } from './bottom-nav';
 import { Toaster } from 'sonner';
 import { useStore } from '../store';
 import { ShieldAlert, Lock, Home, PhoneCall, LogOut } from 'lucide-react';
+import { AiAssistant } from './ai-assistant';
 
 export function Layout() {
   const user = useStore((s) => s.user);
@@ -106,6 +107,7 @@ export function Layout() {
         </div>
       )}
       {!isCartPage && <BottomNav />}
+      <AiAssistant />
     </div>
   );
 }

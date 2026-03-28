@@ -84,6 +84,27 @@ export function ProductDetail() {
   const priceDiff = product.mrp - price;
   const discount = isLoggedIn && priceDiff > 0 ? Math.round((priceDiff / product.mrp) * 100) : 0;
   const related = (PRODUCTS_BY_CATEGORY[product.category] || []).filter((p) => p.id !== product.id).slice(0, 4);
+  
+  // AI Smart Recommendations based on browsing history
+  const recentlyViewed = useStore((s) => s.recentlyViewed);
+  const aiRecommended = useMemo(() => {
+    if (recentlyViewed.length <= 1) return [];
+    
+    // Simple AI heuristic: items from categories you recently looked at, but not this item
+    const recentCategories = new Set(
+      recentlyViewed
+        .map(rid => PRODUCTS_MAP.get(id!)?.category)
+        .filter(Boolean)
+    );
+    
+    const candidates = Array.from(PRODUCTS_MAP.values())
+      .filter(p => p.id !== product.id && recentCategories.has(p.category))
+      .sort(() => 0.5 - Math.random()) // Shuffle
+      .slice(0, 4);
+      
+    return candidates;
+  }, [recentlyViewed, product.id, product.category]);
+
   const minQty = isShop ? product.minWholesaleQty : 1;
   const maxQty = product.stock > 0 ? product.stock : 9999;
   const cartItem = cart.find((i) => i.product.id === product.id);
@@ -330,6 +351,24 @@ export function ProductDetail() {
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
             {related.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* AI Recommendations */}
+      {aiRecommended.length > 0 && (
+        <section className="mt-16 mb-10">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-[22px] flex items-center gap-3" style={{ fontWeight: 700 }}>
+              <div className="w-1 h-7 bg-gradient-to-b from-purple-500 to-primary rounded-full" />
+              Smart Picks for You
+              <Badge variant="secondary" className="bg-purple-50 text-purple-600 border-purple-100 text-[10px] py-0 px-2 animate-pulse">AI</Badge>
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
+            {aiRecommended.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>

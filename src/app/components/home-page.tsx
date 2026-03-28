@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { useStore } from '../store';
 import { products, CATEGORIES, BANNER_IMAGES, FEATURED_PRODUCTS, BEST_SELLERS, PRODUCTS_MAP } from '../data';
 import { ProductCard } from './product-card';
+import { AiAssistant } from './ai-assistant';
 
 // ─── Static data hoisted outside components to avoid re-creation ───
 const HERO_SLIDES = [
