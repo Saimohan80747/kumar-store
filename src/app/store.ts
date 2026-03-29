@@ -60,6 +60,18 @@ export interface Product {
   reviews: number;
 }
 
+export interface ProductReview {
+  id: string;
+  productId: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  date: string;
+  likes: number;
+  isAiSummarized?: boolean;
+}
+
 export interface CartItem {
   product: Product;
   quantity: number;
@@ -145,6 +157,7 @@ interface AppState {
   searchQuery: string;
   selectedCategory: string;
   recentlyViewed: string[];
+  productReviews: ProductReview[];
   dbReady: boolean;
   dbLoading: boolean;
   users: User[];
@@ -195,6 +208,11 @@ interface AppState {
   requestProduct: (productId: string, productName: string) => Promise<void>;
   loadProductRequests: () => Promise<void>;
   updateProductRequest: (id: string, status: 'fulfilled' | 'dismissed') => Promise<void>;
+
+  // Reviews
+  loadReviews: (productId: string) => Promise<void>;
+  addReview: (review: Omit<ProductReview, 'id' | 'date' | 'likes'>) => Promise<void>;
+  toggleReviewLike: (reviewId: string) => Promise<void>;
 
   // Notifications
   loadNotifications: () => Promise<void>;
@@ -257,6 +275,7 @@ export const useStore = create<AppState>((set, get) => ({
   inventoryLedger: [],
   productRequests: [],
   notifications: [],
+  productReviews: [],
   searchQuery: '',
   selectedCategory: '',
   recentlyViewed: [],
@@ -1039,6 +1058,59 @@ export const useStore = create<AppState>((set, get) => ({
       await api.deleteAllNotifications(user.id);
     } catch (err) {
       console.error('Clear notifications error:', err);
+    }
+  },
+
+  // ─── Reviews ───
+  loadReviews: async (productId) => {
+    try {
+      const reviews = await api.getReviews(productId);
+      set({ productReviews: reviews });
+    } catch (err) {
+      console.error('Load reviews error:', err);
+    }
+  },
+
+  addReview: async (payload) => {
+    const { user } = get();
+    if (!user) throw new Error('Must be logged in to review');
+    try {
+      await api.createReview({
+        ...payload,
+        userId: user.id,
+        userName: user.name,
+      });
+      // Refresh reviews for this product
+      await get().loadReviews(payload.productId);
+    } catch (err) {
+      console.error('Add review error:', err);
+      throw err;
+    }
+  },
+
+  toggleReviewLike: async (reviewId) => {
+    const { productReviews } = get();
+    const review = productReviews.find(r => r.id === reviewId);
+    if (!review) return;
+
+    const newLikes = (review.likes || 0) + 1;
+    // Optimistic update
+    set({
+      productReviews: productReviews.map(r => 
+        r.id === reviewId ? { ...r, likes: newLikes } : r
+      )
+    });
+
+    try {
+      await api.updateReviewLikes(reviewId, newLikes);
+    } catch (err) {
+      console.error('Toggle review like error:', err);
+      // Revert on error
+      set({
+        productReviews: productReviews.map(r => 
+          r.id === reviewId ? { ...r, likes: review.likes } : r
+        )
+      });
     }
   },
 

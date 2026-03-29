@@ -247,6 +247,22 @@
     background-clip: text;
     -webkit-text-fill-color: transparent;
   }
+
+  .shadow-premium {
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 4px 10px -5px rgba(0, 0, 0, 0.02);
+  }
+
+  .shadow-premium-lg {
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08), 0 10px 20px -10px rgba(0, 0, 0, 0.04);
+  }
+
+  .shadow-glow {
+    box-shadow: 0 0 20px -5px rgba(22, 163, 74, 0.3);
+  }
+
+  .shadow-glow-lg {
+    box-shadow: 0 0 30px -5px rgba(22, 163, 74, 0.5);
+  }
 }
 
 /* ─── Global Polish ─── */

@@ -321,7 +321,62 @@ export const clearCartItems = async (userId: string) => {
   return { success: true };
 };
 
-// ─── Products (Edge Function) ───
+// ─── Reviews (direct PostgREST) ───
+export const getReviews = async (productId: string) => {
+  const res = await fetchWithTimeout(
+    `${SUPABASE_REST}/kumar_reviews?product_id=eq.${productId}&select=*&order=created_at.desc`,
+    { headers: REST_HEADERS }
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to fetch reviews');
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    productId: row.product_id,
+    userId: row.user_id,
+    userName: row.user_name,
+    rating: row.rating,
+    comment: row.comment,
+    date: row.created_at,
+    likes: row.likes || 0,
+    isAiSummarized: row.is_ai_summarized || false,
+  }));
+};
+
+export const createReview = async (review: any) => {
+  const body = {
+    product_id: review.productId,
+    user_id: review.userId,
+    user_name: review.userName,
+    rating: review.rating,
+    comment: review.comment,
+    is_ai_summarized: review.isAiSummarized || false,
+    created_at: new Date().toISOString(),
+  };
+  const res = await fetchWithTimeout(`${SUPABASE_REST}/kumar_reviews`, {
+    method: 'POST',
+    headers: REST_HEADERS,
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to create review');
+  return { success: true };
+};
+
+export const updateReviewLikes = async (id: string, likes: number) => {
+  const res = await fetchWithTimeout(
+    `${SUPABASE_REST}/kumar_reviews?id=eq.${id}`,
+    {
+      method: 'PATCH',
+      headers: REST_HEADERS,
+      body: JSON.stringify({ likes }),
+    }
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Failed to update review likes');
+  return { success: true };
+};
+
+// ─── Products ───(Edge Function) ───
 export const getProducts = () => request('/products');
 export const createProduct = (product: any) =>
   request('/products', { method: 'POST', body: JSON.stringify(product) });

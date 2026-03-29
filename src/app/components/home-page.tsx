@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import { Link } from 'react-router';
 import { ChevronLeft, ChevronRight, TrendingUp, Truck, Shield, Clock, ArrowRight, Zap, Mic, Headphones, Sparkles, BrainCircuit } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
-import { products, CATEGORIES, BANNER_IMAGES, FEATURED_PRODUCTS, BEST_SELLERS, PRODUCTS_MAP } from '../data';
+import { products as allProducts, CATEGORIES, BANNER_IMAGES, FEATURED_PRODUCTS, BEST_SELLERS, PRODUCTS_MAP } from '../data';
 import { ProductCard } from './product-card';
 import { AiAssistant } from './ai-assistant';
 
@@ -23,7 +23,7 @@ const STATS = [
 
 const TOP_BRANDS = ['Surf Excel', 'Tata Tea', 'Colgate', 'Dove', 'Nescafe', 'Maggi', 'Parle', 'Dabur', 'Himalaya'];
 
-function HeroBanner() {
+const HeroBanner = memo(function HeroBanner() {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
@@ -32,94 +32,96 @@ function HeroBanner() {
   }, []);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl h-[280px] sm:h-[440px] lg:h-[520px] shadow-2xl ring-1 ring-black/5">
-      {/* Floating gradient orbs for depth */}
-      <div className="orb orb-primary w-64 h-64 -top-20 -left-20 animate-float-slow" />
-      <div className="orb orb-emerald w-48 h-48 bottom-10 right-10 animate-float-slow" style={{ animationDelay: '2s' }} />
-      {HERO_SLIDES.map((s, i) => (
-        <div
-          key={i}
-          className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}
-        >
-          <img src={s.img} alt="" className="w-full h-full object-cover" loading={i === 0 ? 'eager' : 'lazy'} />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-          <div className="absolute inset-0 flex items-center">
-            <div className="px-6 sm:px-12 max-w-xl">
-              <motion.h1
-                key={`title-${i}-${current}`}
-                initial={{ y: 30, opacity: 0 }}
-                animate={i === current ? { y: 0, opacity: 1 } : {}}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-white whitespace-pre-line text-[24px] xs:text-[28px] sm:text-[40px] lg:text-[52px] drop-shadow-lg"
-                style={{ fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.025em' }}
-              >
-                {s.title}
-              </motion.h1>
-              <motion.p
-                key={`sub-${i}-${current}`}
-                initial={{ y: 20, opacity: 0 }}
-                animate={i === current ? { y: 0, opacity: 1 } : {}}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="text-white/85 mt-3 sm:mt-4 text-[13px] sm:text-[17px] max-w-md leading-relaxed line-clamp-2 sm:line-clamp-none"
-              >
-                {s.sub}
-              </motion.p>
-              <motion.div
-                key={`cta-${i}-${current}`}
-                initial={{ y: 20, opacity: 0 }}
-                animate={i === current ? { y: 0, opacity: 1 } : {}}
-                transition={{ duration: 0.6, delay: 0.6 }}
-              >
-                <Link to="/products" className="inline-flex items-center gap-2 mt-4 sm:mt-6 px-5 sm:px-7 py-2.5 sm:py-3.5 bg-white text-gray-900 rounded-full hover:bg-white/90 shadow-lg hover:shadow-xl transition-all text-[14px] sm:text-[15px] group" style={{ fontWeight: 700 }}>
-                  {s.cta} <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </motion.div>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        className="relative overflow-hidden rounded-2xl sm:rounded-3xl h-[280px] sm:h-[440px] lg:h-[520px] shadow-2xl ring-1 ring-black/5"
+      >
+        {/* Floating gradient orbs for depth */}
+        <div className="orb orb-primary w-64 h-64 -top-20 -left-20 animate-float-slow" />
+        <div className="orb orb-emerald w-48 h-48 bottom-10 right-10 animate-float-slow" style={{ animationDelay: '2s' }} />
+        {HERO_SLIDES.map((s, i) => (
+          <div
+            key={i}
+            className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}
+          >
+            <img src={s.img} alt="" className="w-full h-full object-cover" loading={i === 0 ? 'eager' : 'lazy'} />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+            <div className="absolute inset-0 flex items-center">
+              <div className="px-6 sm:px-12 max-w-xl">
+                <motion.h1
+                  key={`title-${i}-${current}`}
+                  initial={{ x: -30, opacity: 0 }}
+                  animate={i === current ? { x: 0, opacity: 1 } : {}}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="text-white whitespace-pre-line text-[24px] xs:text-[28px] sm:text-[40px] lg:text-[52px] drop-shadow-lg"
+                  style={{ fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.025em' }}
+                >
+                  {s.title}
+                </motion.h1>
+                <motion.p
+                  key={`sub-${i}-${current}`}
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={i === current ? { x: 0, opacity: 1 } : {}}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                  className="text-white/85 mt-3 sm:mt-4 text-[13px] sm:text-[17px] max-w-md leading-relaxed line-clamp-2 sm:line-clamp-none"
+                >
+                  {s.sub}
+                </motion.p>
+                <motion.div
+                  key={`cta-${i}-${current}`}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={i === current ? { y: 0, opacity: 1 } : {}}
+                  transition={{ duration: 0.6, delay: 0.6 }}
+                >
+                  <Link to="/products" className="inline-flex items-center gap-2 mt-4 sm:mt-6 px-5 sm:px-7 py-2.5 sm:py-3.5 bg-white text-gray-900 rounded-full hover:bg-white/90 shadow-lg hover:shadow-xl transition-all text-[14px] sm:text-[15px] group" style={{ fontWeight: 700 }}>
+                    {s.cta} <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                </motion.div>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
-
-      <button onClick={() => setCurrent((p) => (p - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)} className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/25 transition-all hover:scale-110 border border-white/20 hidden sm:block">
-        <ChevronLeft className="w-5 h-5" />
-      </button>
-      <button onClick={() => setCurrent((p) => (p + 1) % HERO_SLIDES.length)} className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/25 transition-all hover:scale-110 border border-white/20 hidden sm:block">
-        <ChevronRight className="w-5 h-5" />
-      </button>
-
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2">
-        {HERO_SLIDES.map((_, i) => (
-          <button key={i} onClick={() => setCurrent(i)} className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${i === current ? 'bg-white w-8 sm:w-10' : 'bg-white/40 w-1 sm:w-1.5 hover:bg-white/60'}`} />
         ))}
-      </div>
-    </div>
-  );
-}
 
-function StatsBanner() {
+        <button onClick={() => setCurrent((p) => (p - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)} className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/25 transition-all hover:scale-110 border border-white/20 hidden sm:block">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <button onClick={() => setCurrent((p) => (p + 1) % HERO_SLIDES.length)} className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/25 transition-all hover:scale-110 border border-white/20 hidden sm:block">
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2">
+          {HERO_SLIDES.map((_, i) => (
+            <button key={i} onClick={() => setCurrent(i)} className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${i === current ? 'bg-white w-8 sm:w-10' : 'bg-white/40 w-1 sm:w-1.5 hover:bg-white/60'}`} />
+          ))}
+        </div>
+      </motion.div>
+  );
+});
+
+const StatsBanner = memo(function StatsBanner() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mt-8 sm:mt-12">
       {STATS.map((s, i) => (
-        <motion.div
-          key={s.label}
+        <motion.div 
+          key={i} 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
           viewport={{ once: true }}
-          className="flex items-center gap-2.5 sm:gap-3 p-3 sm:p-4 bg-white rounded-2xl border border-border/80 hover:border-primary/20 hover:shadow-lg transition-all duration-300 group cursor-default glow-primary-hover shadow-premium"
+          className="bg-white p-4 sm:p-6 rounded-2xl border border-border/60 hover:border-primary/20 transition-all shadow-premium hover:shadow-premium-lg group"
         >
-          <div className="p-2 sm:p-2.5 bg-gradient-to-br from-primary/10 to-emerald-500/10 rounded-xl shrink-0 group-hover:scale-110 transition-transform duration-300">
-            <s.icon className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
+            <s.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
           </div>
-          <div className="min-w-0">
-            <p className="text-[13px] sm:text-[14px] truncate" style={{ fontWeight: 600 }}>{s.label}</p>
-            <p className="text-[11px] sm:text-[12px] text-muted-foreground truncate">{s.sub}</p>
-          </div>
+          <h3 className="text-[14px] sm:text-[16px]" style={{ fontWeight: 700 }}>{s.label}</h3>
+          <p className="text-[11px] sm:text-[13px] text-muted-foreground mt-1">{s.sub}</p>
         </motion.div>
       ))}
     </div>
   );
-}
+});
 
 function CategorySection() {
   return (
@@ -261,31 +263,101 @@ export function HomePage() {
 
   // Only recompute when recentlyViewed changes
   const recentProducts = useMemo(
-    () => recentlyViewed.map((id) => PRODUCTS_MAP.get(id)).filter(Boolean) as typeof products,
+    () => recentlyViewed.map((id) => PRODUCTS_MAP.get(id)).filter(Boolean) as typeof allProducts,
     [recentlyViewed]
   );
 
   return (
-    <div className="space-y-14 py-6">
-      <HeroBanner />
-      <StatsBanner />
+    <div className="space-y-12 sm:space-y-20 pb-16">
+      <section>
+        <HeroBanner />
+        <StatsBanner />
+      </section>
+
       <CategorySection />
+
+      {/* AI Smart Deals */}
+      <section>
+        <div className="flex items-center justify-between mb-8 px-2">
+          <div className="flex items-center gap-3">
+            <div className="w-1.5 h-8 bg-gradient-to-b from-purple-500 to-primary rounded-full" />
+            <div>
+              <h2 className="text-[24px] sm:text-[28px] tracking-tight" style={{ fontWeight: 800 }}>
+                Smart Deals for You
+              </h2>
+              <p className="text-muted-foreground text-[14px]">AI-curated based on your interests</p>
+            </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-600 rounded-full border border-purple-100 animate-pulse">
+            <Sparkles className="w-3 h-3" />
+            <span className="text-[11px] font-bold uppercase tracking-wider">AI Powered</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
+          {BEST_SELLERS.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      </section>
 
       {/* Featured Products */}
       <section>
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-1 h-6 sm:h-7 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
-            <h2 className="text-[18px] sm:text-[22px]" style={{ fontWeight: 700 }}>Featured Products</h2>
+        <div className="flex items-center justify-between mb-8 px-2">
+          <div className="flex items-center gap-3">
+            <div className="w-1.5 h-8 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
+            <div>
+              <h2 className="text-[24px] sm:text-[28px] tracking-tight" style={{ fontWeight: 800 }}>
+                Featured Collections
+              </h2>
+              <p className="text-muted-foreground text-[14px]">Handpicked premium quality items</p>
+            </div>
           </div>
-          <Link to="/products" className="text-primary text-[12px] sm:text-[13px] flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-primary/5 hover:bg-primary/10 rounded-full transition-colors" style={{ fontWeight: 600 }}>View All <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" /></Link>
+          <Link to="/products" className="text-primary font-bold text-[14px] hover:underline flex items-center gap-1 group">
+            View All <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </Link>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4 md:gap-5">
-          {FEATURED_PRODUCTS.map((p, i) => (
-            <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} viewport={{ once: true }}>
-              <ProductCard product={p} />
-            </motion.div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
+          {FEATURED_PRODUCTS.slice(0, 10).map((p) => (
+            <ProductCard key={p.id} product={p} />
           ))}
+        </div>
+      </section>
+
+      {/* Top Brands Grid */}
+      <section className="bg-slate-50 -mx-4 px-4 py-16 sm:py-24 border-y border-slate-100">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-[24px] sm:text-[32px]" style={{ fontWeight: 800 }}>Trusted by 500+ Local Brands</h2>
+            <p className="text-muted-foreground mt-2">We bring you the best from names you know and trust</p>
+          </div>
+          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-4 sm:gap-8 opacity-60">
+            {TOP_BRANDS.map(brand => (
+              <div key={brand} className="flex items-center justify-center p-4 bg-white rounded-2xl border border-slate-100 grayscale hover:grayscale-0 transition-all hover:scale-110 cursor-default">
+                <span className="text-[12px] font-black text-slate-400 text-center uppercase tracking-tighter">{brand}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* All Products */}
+      <section>
+        <div className="flex items-center gap-3 mb-8 px-2">
+          <div className="w-1.5 h-8 bg-gradient-to-b from-slate-400 to-slate-600 rounded-full" />
+          <h2 className="text-[24px] sm:text-[28px] tracking-tight" style={{ fontWeight: 800 }}>Explore Our Catalog</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
+          {allProducts.slice(0, 10).map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+        <div className="mt-12 text-center">
+          <Link 
+            to="/products" 
+            className="inline-flex items-center gap-2 px-10 py-4 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-95 font-bold"
+          >
+            Explore 1000+ Products <ArrowRight className="w-5 h-5" />
+          </Link>
         </div>
       </section>
 
@@ -300,51 +372,15 @@ export function HomePage() {
             <span className="bg-gradient-to-r from-primary to-emerald-500 text-white text-[11px] px-3 py-1 rounded-full shadow-sm" style={{ fontWeight: 600 }}>Shop Owner Exclusive</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
-            {products.slice(0, 5).map((p) => (
+            {allProducts.slice(0, 5).map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
         </section>
       )}
 
-      {/* Best Sellers */}
-      <section>
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-1 h-6 sm:h-7 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
-            <h2 className="text-[18px] sm:text-[22px]" style={{ fontWeight: 700 }}>Best Sellers</h2>
-          </div>
-          <Link to="/products" className="text-primary text-[12px] sm:text-[13px] flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-primary/5 hover:bg-primary/10 rounded-full transition-colors" style={{ fontWeight: 600 }}>View All <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" /></Link>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4 md:gap-5">
-          {BEST_SELLERS.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
-
       {/* AI-Powered Section */}
       <AiSection />
-
-      {/* Top Brands */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl border border-border/80 p-6 sm:p-8 shadow-sm">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-1 h-7 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
-          <h2 className="text-[22px]" style={{ fontWeight: 700 }}>Top Brands</h2>
-        </div>
-        <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-3">
-          {TOP_BRANDS.map((brand) => (
-            <Link
-              key={brand}
-              to={`/products?brand=${brand}`}
-              className="flex items-center justify-center p-4 bg-gray-50/80 rounded-2xl hover:bg-primary/5 hover:border-primary/30 border border-transparent transition-all duration-300 text-[13px] text-center hover:shadow-md hover:-translate-y-0.5 group card-lift"
-              style={{ fontWeight: 600 }}
-            >
-              <span className="group-hover:text-primary transition-colors">{brand}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
 
       {/* Recently Viewed */}
       {recentProducts.length > 0 && (

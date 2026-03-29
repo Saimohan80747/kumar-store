@@ -1,9 +1,9 @@
 import { memo } from 'react';
+import { motion } from 'motion/react';
 import { Heart, ShoppingCart, Star, Package, Bell, Plus, Minus, Tag } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useStore, type Product } from '../store';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router';
 
 export const ProductCard = memo(function ProductCard({ product }: { product: Product }) {
   // Granular selectors — only re-render when relevant state changes
@@ -28,181 +28,183 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
   const cartQty = cartItem?.quantity || 0;
 
   return (
-    <div className={`group bg-white rounded-2xl border border-border/80 hover:border-primary/15 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 overflow-hidden relative flex flex-col card-lift shadow-premium ${!isAvailable ? 'opacity-60 grayscale-[30%]' : ''}`}>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      whileHover={{ y: -8 }}
+      className={`group bg-white rounded-[24px] border border-slate-200/60 hover:border-primary/20 hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] transition-all duration-500 overflow-hidden relative flex flex-col shadow-premium ${!isAvailable ? 'opacity-60 grayscale-[30%]' : ''}`}
+    >
+      {/* Quick View Overlay (Mobile Friendly) */}
+      <div className="absolute inset-0 z-20 pointer-events-none bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
       {/* Badges */}
-      <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+      <div className="absolute top-4 left-4 z-30 flex flex-col gap-1.5">
         {!isAvailable && (
-          <span className="bg-gray-700/90 backdrop-blur-sm text-white text-[10px] px-2.5 py-0.5 rounded-full" style={{ fontWeight: 600 }}>Out of Stock</span>
+          <motion.span 
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="bg-slate-900/90 backdrop-blur-md text-white text-[10px] px-3 py-1 rounded-lg font-bold uppercase tracking-wider shadow-lg"
+          >
+            Sold Out
+          </motion.span>
         )}
         {product.featured && isAvailable && (
-          <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] px-2.5 py-0.5 rounded-full shadow-sm" style={{ fontWeight: 600 }}>Featured</span>
+          <motion.span 
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] px-3 py-1 rounded-lg font-bold uppercase tracking-wider shadow-lg shadow-orange-500/20"
+          >
+            Featured
+          </motion.span>
         )}
         {isLoggedIn && discount > 0 && isAvailable && (
-          <span className="bg-gradient-to-r from-primary to-emerald-500 text-white text-[10px] px-2.5 py-0.5 rounded-full shadow-sm" style={{ fontWeight: 600 }}>{discount}% OFF</span>
-        )}
-        {product.stock > 0 && product.stock < 50 && (
-          <span className="bg-gradient-to-r from-red-500 to-rose-500 text-white text-[10px] px-2.5 py-0.5 rounded-full shadow-sm animate-pulse" style={{ fontWeight: 600 }}>Low Stock</span>
+          <motion.span 
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[10px] px-3 py-1 rounded-lg font-bold uppercase tracking-wider shadow-lg shadow-emerald-500/20"
+          >
+            Save {discount}%
+          </motion.span>
         )}
       </div>
 
-      {/* Wishlist */}
-      <button
-        onClick={() => {
-          if (!isLoggedIn) { navigate('/login'); return; }
-          toggleWishlist(product.id); toast.success(isWished ? 'Removed from wishlist' : 'Added to wishlist');
-        }}
-        className="absolute top-3 right-3 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-white hover:shadow-md hover:scale-110 transition-all duration-200"
-      >
-        <Heart className={`w-4 h-4 ${isWished ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
-      </button>
+      {/* Actions (Floating on Hover) */}
+      <div className="absolute top-4 right-4 z-30 flex flex-col gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 ease-out">
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            if (!isLoggedIn) { navigate('/login'); return; }
+            toggleWishlist(product.id);
+            toast.success(isWished ? 'Removed from wishlist' : 'Added to wishlist');
+          }}
+          className={`p-2.5 rounded-2xl shadow-xl backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-90 ${isWished ? 'bg-red-500 text-white shadow-red-500/20' : 'bg-white/90 text-slate-400 hover:text-red-500'}`}
+        >
+          <Heart className={`w-4.5 h-4.5 ${isWished ? 'fill-current' : ''}`} />
+        </button>
+        <button
+          onClick={() => navigate(`/product/${product.id}`)}
+          className="p-2.5 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl text-slate-400 hover:text-primary hover:scale-110 active:scale-90 transition-all duration-300"
+        >
+          <Tag className="w-4.5 h-4.5" />
+        </button>
+      </div>
 
-      {/* Image */}
-      <Link to={`/product/${product.id}`} className="relative overflow-hidden">
-        <div className="aspect-square bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100/80 p-3 flex items-center justify-center overflow-hidden shine-hover">
-          <img src={product.image} alt={product.name} className="w-full h-full object-cover rounded-xl group-hover:scale-110 transition-transform duration-700 ease-out" loading="lazy" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      {/* Image Container */}
+      <Link to={`/product/${product.id}`} className="relative block overflow-hidden bg-slate-50">
+        <div className="aspect-[4/5] flex items-center justify-center p-6 sm:p-8 overflow-hidden">
+          <motion.img 
+            src={product.image} 
+            alt={product.name} 
+            whileHover={{ scale: 1.15 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full h-full object-contain mix-blend-multiply drop-shadow-2xl"
+            loading="lazy" 
+          />
         </div>
-      </Link>
-
-      {/* Info */}
-      <div className="p-3.5 flex-1 flex flex-col">
-        <span className="text-[10px] text-muted-foreground uppercase tracking-widest" style={{ fontWeight: 600 }}>{product.brand}</span>
-        <Link to={`/product/${product.id}`} className="text-[14px] mt-1 line-clamp-2 hover:text-primary transition-colors leading-snug" style={{ fontWeight: 500 }}>
-          {product.name}
-        </Link>
-
-        {/* Rating */}
-        <div className="flex items-center gap-1.5 mt-2">
-          <div className="flex items-center gap-0.5 bg-gradient-to-r from-primary to-emerald-500 text-white px-1.5 py-0.5 rounded-md text-[11px] shadow-sm">
-            <Star className="w-3 h-3 fill-white" /> {product.rating}
-          </div>
-          <span className="text-[11px] text-muted-foreground">({product.reviews.toLocaleString()})</span>
-        </div>
-
-        {/* Price */}
-        {isLoggedIn ? (
-          <div className="mt-2">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-muted-foreground">MRP:</span>
-              <span className={`text-[13px] ${priceDiff > 0 ? 'line-through text-muted-foreground' : 'text-foreground'}`} style={{ fontWeight: priceDiff > 0 ? 400 : 700 }}>Rs.{product.mrp}</span>
-            </div>
-            {priceDiff > 0 && (
-              <div className="flex items-end gap-2 mt-0.5">
-                <span className="text-[18px] text-foreground" style={{ fontWeight: 700 }}>Rs.{price}</span>
-              </div>
-            )}
-            {priceDiff > 0 && (
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="text-[11px] text-primary bg-primary/8 px-2 py-0.5 rounded-full" style={{ fontWeight: 600 }}>Save Rs.{priceDiff}</span>
-              </div>
-            )}
-            {/* Show shopowner vs customer pricing comparison */}
-            {isLoggedIn && isShop && (
-              <div className="mt-1.5 flex items-center gap-1 text-[11px]">
-                <Tag className="w-3 h-3 text-amber-500" />
-                <span className="text-muted-foreground">Customer price:</span>
-                <span className="text-amber-600" style={{ fontWeight: 600 }}>Rs.{product.customerPrice}</span>
-              </div>
-            )}
-            {/* Removed "Customer Discount Applied" label (requested) */}
-          </div>
-        ) : (
-          <div className="mt-2">
-            <Link to="/login" className="text-[14px] text-primary hover:underline" style={{ fontWeight: 600 }}>
-              Login to see price
-            </Link>
-          </div>
-        )}
-
-        {isLoggedIn && isShop && (
-          <div className="mt-1 flex items-center gap-2 text-[12px]">
-            <span className="text-primary" style={{ fontWeight: 600 }}>Save Rs.{product.mrp - product.shopPrice}/unit</span>
-            <span className="text-muted-foreground">| Margin {Math.round(((product.mrp - product.shopPrice) / product.mrp) * 100)}%</span>
-          </div>
-        )}
-
-        {isLoggedIn && isShop && (
-          <div className="flex items-center gap-1 mt-1 text-[11px] text-muted-foreground">
-            <Package className="w-3 h-3" /> Min. order: {product.minWholesaleQty} {product.unitType}s
-          </div>
-        )}
-
-        {/* Add to cart / Request */}
-        {isLoggedIn ? (
-          isAvailable ? (
-            cartQty > 0 ? (
-              /* Increment / Decrement controls */
-              <div className="mt-3 flex items-center justify-between bg-primary/5 border border-primary/20 rounded-xl overflow-hidden">
+        
+        {/* Quick Add (Desktop) */}
+        {isAvailable && (
+          <div className="absolute inset-x-4 bottom-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-30 hidden sm:block">
+            {cartQty > 0 ? (
+              <div className="flex items-center bg-white/90 backdrop-blur-md rounded-2xl p-1 shadow-2xl border border-white">
                 <button
-                  onClick={() => {
-                    if (cartQty <= 1) {
-                      removeFromCart(product.id);
-                      toast.success('Removed from cart');
-                    } else {
-                      updateCartQty(product.id, cartQty - 1);
-                    }
-                  }}
-                  className="px-3 py-2 hover:bg-primary/10 transition-colors"
+                  onClick={(e) => { e.preventDefault(); updateCartQty(product.id, cartQty - 1); }}
+                  className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-600 transition-colors"
                 >
-                  <Minus className="w-4 h-4 text-primary" />
+                  <Minus className="w-4 h-4" />
                 </button>
-                <span className="text-[15px] text-primary min-w-[40px] text-center" style={{ fontWeight: 700 }}>
-                  {cartQty}
-                </span>
+                <span className="flex-1 text-center font-bold text-slate-900">{cartQty}</span>
                 <button
-                  onClick={() => {
-                    if (cartQty < product.stock) {
-                      updateCartQty(product.id, cartQty + 1);
-                    } else {
-                      toast.error(`Only ${product.stock} in stock`);
-                    }
-                  }}
-                  className="px-3 py-2 hover:bg-primary/10 transition-colors"
+                  onClick={(e) => { e.preventDefault(); updateCartQty(product.id, cartQty + 1); }}
+                  className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-600 transition-colors"
                 >
-                  <Plus className="w-4 h-4 text-primary" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
             ) : (
               <button
-                onClick={() => {
-                  const qty = isShop ? product.minWholesaleQty : 1;
-                  addToCart(product, qty);
-                  toast.success(`Added ${qty} ${product.unitType}(s) to cart`);
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (!isLoggedIn) { navigate('/login'); return; }
+                  addToCart(product);
+                  toast.success(`Added ${product.name} to cart`);
                 }}
-                className="mt-3 w-full py-2.5 bg-primary text-white rounded-xl hover:bg-primary/90 hover:shadow-md hover:shadow-primary/25 transition-all flex items-center justify-center gap-2 text-[13px] active:scale-[0.97] btn-press"
-                style={{ fontWeight: 600 }}
+                className="w-full py-3.5 bg-slate-900 text-white rounded-2xl font-bold text-[14px] flex items-center justify-center gap-2 shadow-2xl hover:bg-slate-800 transition-all active:scale-95"
               >
-                <ShoppingCart className="w-4 h-4" />
-                {isShop ? `Add ${product.minWholesaleQty} to Cart` : 'Add to Cart'}
+                <ShoppingCart className="w-4 h-4" /> Quick Add
               </button>
-            )
-          ) : (
-            /* Unavailable — Request Product button */
-            <button
-              onClick={async () => {
-                try {
-                  await requestProduct(product.id, product.name);
-                  toast.success('Product request sent! We\'ll notify you when it\'s available.');
-                } catch {
-                  toast.error('Request already submitted or failed.');
-                }
-              }}
-              className="mt-3 w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:shadow-md hover:shadow-amber-500/20 transition-all flex items-center justify-center gap-2 text-[13px] active:scale-[0.97]"
-            >
-              <Bell className="w-4 h-4" />
-              Request Product
-            </button>
-          )
-        ) : (
-          <Link
-            to="/login"
-            className="mt-3 w-full py-2.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 border border-border/60 transition-all flex items-center justify-center gap-2 text-[13px] group/login"
-          >
-            <ShoppingCart className="w-4 h-4 group-hover/login:text-primary transition-colors" />
-            Login to Buy
-          </Link>
+            )}
+          </div>
         )}
+      </Link>
+
+      {/* Content Container */}
+      <div className="p-5 flex-1 flex flex-col bg-white">
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <span className="text-[10px] text-slate-400 uppercase tracking-[0.15em] font-black">{product.brand}</span>
+          <div className="flex items-center gap-1 text-[11px] font-bold text-amber-500">
+            <Star className="w-3 h-3 fill-current" />
+            <span>{product.rating}</span>
+          </div>
+        </div>
+
+        <Link to={`/product/${product.id}`} className="text-[15px] text-slate-800 line-clamp-2 hover:text-primary transition-colors leading-tight font-bold mb-3">
+          {product.name}
+        </Link>
+
+        {/* Pricing & Cart (Mobile optimized) */}
+        <div className="mt-auto pt-4 border-t border-slate-50 flex items-end justify-between gap-4">
+          <div className="flex flex-col">
+            {isLoggedIn ? (
+              <>
+                {priceDiff > 0 && (
+                  <span className="text-[12px] text-slate-400 line-through">Rs.{product.mrp}</span>
+                )}
+                <span className="text-[19px] text-slate-900 font-black leading-none">Rs.{price}</span>
+              </>
+            ) : (
+              <button 
+                onClick={() => navigate('/login')}
+                className="text-[11px] font-bold text-primary hover:underline uppercase tracking-wider"
+              >
+                Login for Price
+              </button>
+            )}
+          </div>
+
+          {/* Mobile Cart Action */}
+          <div className="sm:hidden">
+            {isAvailable ? (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (!isLoggedIn) { navigate('/login'); return; }
+                  if (cartQty > 0) navigate('/cart');
+                  else {
+                    addToCart(product);
+                    toast.success('Added to cart');
+                  }
+                }}
+                className={`w-11 h-11 flex items-center justify-center rounded-2xl transition-all active:scale-90 ${cartQty > 0 ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}
+              >
+                {cartQty > 0 ? <span className="text-[14px] font-black">{cartQty}</span> : <ShoppingCart className="w-5 h-5" />}
+              </button>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  requestProduct(product.id, product.name);
+                  toast.success('Interest noted! We will notify you.');
+                }}
+                className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400"
+              >
+                <Bell className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 });
