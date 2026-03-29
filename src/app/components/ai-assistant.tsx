@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
-    Search, Mic, X, Sparkles, TrendingUp, History, ArrowRight,
-    Loader2, ShoppingBag, MessageSquare, BrainCircuit
+    Search, Mic, Sparkles, ArrowRight,
+    Loader2, MessageSquare, BrainCircuit
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router';

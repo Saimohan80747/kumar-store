@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { 
-  User, Store, Lock, Mail, ArrowRight, Eye, EyeOff, AlertCircle, 
-  Clock, XCircle, Loader2, ShieldCheck, Sparkles, ArrowLeft,
-  ChevronRight, Zap, Heart, Shield, CheckCircle2
+  Store, Lock, Mail, ArrowRight, Eye, EyeOff, AlertCircle, 
+  Clock, Loader2, ShieldCheck, Sparkles, ArrowLeft,
+  Zap, Heart, Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
@@ -26,7 +26,6 @@ export function LoginPage() {
   const login = useStore((s) => s.login);
   const checkEmailExists = useStore((s) => s.checkEmailExists);
   const navigate = useNavigate();
-  const location = useLocation();
   
   const [role, setRole] = useState<'customer' | 'shopowner'>('customer');
   const [email, setEmail] = useState('');

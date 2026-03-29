@@ -1,9 +1,9 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router';
 import {
   User, Store, Mail, Phone, MapPin, Lock, Eye, EyeOff, ArrowRight,
-  CheckCircle2, Clock, Loader2, ShieldCheck, UserPlus, Sparkles, Globe, Locate,
-  ChevronRight, ArrowLeft, Heart, Zap
+  CheckCircle2, Clock, Loader2, ShieldCheck, Sparkles, Globe, Locate,
+  ArrowLeft, Heart, Zap, ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -427,10 +427,6 @@ export function RegisterPage() {
       selectField.dispatchEvent(new Event('change'));
     }
   };
-
-  const passwordStrength = form.password.length === 0 ? 0 : form.password.length < 6 ? 1 : form.password.length < 10 ? 2 : 3;
-  const strengthLabels = ['', 'Weak', 'Good', 'Strong'];
-  const strengthColors = ['', 'bg-red-400', 'bg-amber-400', 'bg-primary'];
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white relative overflow-hidden">

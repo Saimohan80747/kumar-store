@@ -1,6 +1,6 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, ShoppingCart, Star, Package, Bell, Plus, Minus, Tag, Eye, Zap, Sparkles } from 'lucide-react';
+import { Heart, ShoppingCart, Star, Package, Bell, Plus, Minus, Eye, Zap, Sparkles, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
 import { useStore, type Product } from '../store';
 import { toast } from 'sonner';
@@ -10,7 +10,6 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
   const cart = useStore((s) => s.cart);
   const wishlist = useStore((s) => s.wishlist);
   const addToCart = useStore((s) => s.addToCart);
-  const removeFromCart = useStore((s) => s.removeFromCart);
   const updateCartQty = useStore((s) => s.updateCartQty);
   const toggleWishlist = useStore((s) => s.toggleWishlist);
   const getPrice = useStore((s) => s.getPrice);
@@ -27,15 +26,11 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
   const cartItem = cart.find((i) => i.product.id === product.id);
   const cartQty = cartItem?.quantity || 0;
 
-  const [isHovered, setIsHovered] = useState(false);
-
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className={`group relative bg-white rounded-[32px] border border-slate-100 hover:border-primary/20 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] transition-all duration-700 ease-out flex flex-col h-full overflow-hidden ${!isAvailable ? 'opacity-70 grayscale-[30%]' : ''}`}
     >
       {/* 1. Top Badges & Actions */}

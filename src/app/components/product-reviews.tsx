@@ -36,7 +36,6 @@ function Stars({ value, onChange, size = 18 }: { value: number; onChange?: (v: n
 
 export function ProductReviews({ productId }: { productId: string }) {
   const user = useStore((s) => s.user);
-  const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [rating, setRating] = useState(5);
   const [title, setTitle] = useState('');
@@ -77,14 +76,11 @@ export function ProductReviews({ productId }: { productId: string }) {
   }, [reviews]);
 
   const load = async () => {
-    setLoading(true);
     try {
       const data = await getProductReviews(productId);
       setReviews(data);
     } catch (e: any) {
       toast.error(e?.message || 'Failed to load reviews');
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -1,10 +1,10 @@
-import { useState, memo, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router';
+import { useState, memo, useMemo, useCallback, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router';
 import {
   Search, ShoppingCart, Heart, User, Menu, X, Package,
   ChevronDown, LogOut, Store, MapPin, Bell, CheckCheck, TrendingUp,
-  Mic, Sparkles, BrainCircuit, History, ArrowRight, Loader2, ChevronRight,
-  ShieldCheck, Zap, Star, LayoutGrid, ZapIcon
+  Mic, Sparkles, History, ChevronRight,
+  Zap, Star, LayoutGrid, ZapIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
@@ -17,11 +17,9 @@ import stringSimilarity from 'string-similarity';
 // ─── AI Smart Search Dropdown ───
 const SmartSearchSuggestions = memo(function SmartSearchSuggestions({
   query,
-  onClose,
   onSelect
 }: {
   query: string;
-  onClose: () => void;
   onSelect: (q: string) => void;
 }) {
   const products = useStore((s) => s.products);
@@ -494,8 +492,10 @@ export function Navbar() {
                   {searchQuery.length >= 2 && (
                     <SmartSearchSuggestions 
                       query={searchQuery} 
-                      onClose={() => setSearchQuery('')}
-                      onSelect={(q) => { setSearchQuery(q); navigate('/products'); }}
+                      onSelect={(q) => {
+                        setSearchQuery(q);
+                        navigate(`/products?search=${encodeURIComponent(q)}`);
+                      }}
                     />
                   )}
                 </AnimatePresence>
@@ -623,7 +623,7 @@ export function Navbar() {
                     <div className="flex items-center gap-3"><Package className="w-5 h-5 text-primary" /> My Orders</div>
                     <ChevronRight className="w-4 h-4 text-slate-300" />
                   </Link>
-                  <Link to="/wishlist" onClick={() => setMobileMenuMenu(false)} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl text-[14px] font-black uppercase tracking-widest">
+                  <Link to="/wishlist" onClick={() => setMobileMenu(false)} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl text-[14px] font-black uppercase tracking-widest">
                     <div className="flex items-center gap-3"><Heart className="w-5 h-5 text-rose-500" /> My Wishlist</div>
                     <ChevronRight className="w-4 h-4 text-slate-300" />
                   </Link>

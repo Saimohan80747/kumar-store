@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router';
 import { Star, Heart, ShoppingCart, Minus, Plus, Package, Truck, Shield, RotateCcw, Share2, ArrowLeft, Lock, Tag, Play, Volume2, Globe, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SarvamService } from '../services/sarvam';
-import { useStore } from '../store';
+import { useStore, type Product } from '../store';
 import { PRODUCTS_MAP, PRODUCTS_BY_CATEGORY } from '../data';
 import { ProductCard } from './product-card';
 import { ProductReviews } from './product-reviews';
+import { Badge } from './ui/badge';
 
 // ─── Static config hoisted outside component ───
 const FEATURES = [
@@ -93,7 +94,7 @@ export function ProductDetail() {
     // Simple AI heuristic: items from categories you recently looked at, but not this item
     const recentCategories = new Set(
       recentlyViewed
-        .map(rid => PRODUCTS_MAP.get(id!)?.category)
+        .map(rid => PRODUCTS_MAP.get(rid)?.category)
         .filter(Boolean)
     );
     
@@ -368,7 +369,7 @@ export function ProductDetail() {
             </h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
-            {aiRecommended.map((p) => (
+            {aiRecommended.map((p: Product) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>

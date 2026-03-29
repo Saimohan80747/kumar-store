@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router';
 import { 
-  Minus, Plus, Trash2, ShoppingCart, Tag, ArrowRight, 
-  ShoppingBag, CheckCircle2, ChevronRight, Zap, Info,
-  AlertCircle, ShieldCheck, ArrowLeft, Store
+  Minus, Plus, Trash2, Tag, ArrowRight, 
+  ShoppingBag, Zap,
+  ShieldCheck, ArrowLeft, Store
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore, FREE_DELIVERY_THRESHOLD, DELIVERY_FEE } from '../store';

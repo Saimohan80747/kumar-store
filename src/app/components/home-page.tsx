@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo, memo } from 'react';
 import { Link } from 'react-router';
 import { ChevronLeft, ChevronRight, TrendingUp, Truck, Shield, Clock, ArrowRight, Zap, Mic, Headphones, Sparkles, BrainCircuit } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { useStore } from '../store';
 import { products as allProducts, CATEGORIES, BANNER_IMAGES, FEATURED_PRODUCTS, BEST_SELLERS, PRODUCTS_MAP } from '../data';
 import { ProductCard } from './product-card';
-import { AiAssistant } from './ai-assistant';
 
 // ─── Static data hoisted outside components to avoid re-creation ───
 const HERO_SLIDES = [

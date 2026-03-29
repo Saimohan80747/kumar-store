@@ -1,8 +1,8 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate, useSearchParams, Navigate, Link } from 'react-router';
 import { 
-  CreditCard, Banknote, Smartphone, MapPin, ShieldCheck, Tag, Locate, X, 
-  ArrowRight, ChevronRight, Lock, Calendar, Clock, Info, Shield, 
+  CreditCard, Banknote, Smartphone, MapPin, ShieldCheck, Locate, X, 
+  ArrowRight, Lock, Clock, 
   CheckCircle2, Loader2, ArrowLeft, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
