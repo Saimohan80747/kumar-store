@@ -1,13 +1,33 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
-import { User, Store, Lock, Mail, ArrowRight, Eye, EyeOff, AlertCircle, Clock, XCircle, Loader2, ShieldCheck, Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router';
+import { 
+  User, Store, Lock, Mail, ArrowRight, Eye, EyeOff, AlertCircle, 
+  Clock, XCircle, Loader2, ShieldCheck, Sparkles, ArrowLeft,
+  ChevronRight, Zap, Heart, Shield, CheckCircle2
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store';
 import { toast } from 'sonner';
+
+const BENEFITS = {
+  customer: [
+    { icon: Zap, title: 'Instant Access', desc: 'Shop right away after sign in' },
+    { icon: Heart, title: 'Personalized', desc: 'Your favorite items saved' },
+    { icon: Shield, title: 'Secure Pay', desc: '100% safe transactions' },
+  ],
+  shopowner: [
+    { icon: Store, title: 'Wholesale Rates', desc: 'Unlock exclusive business pricing' },
+    { icon: ShieldCheck, title: 'Credit Limit', desc: 'Manage your business credit' },
+    { icon: Zap, title: 'Bulk Tools', desc: 'Fast reordering for your shop' },
+  ]
+};
 
 export function LoginPage() {
   const login = useStore((s) => s.login);
   const checkEmailExists = useStore((s) => s.checkEmailExists);
   const navigate = useNavigate();
+  const location = useLocation();
+  
   const [role, setRole] = useState<'customer' | 'shopowner'>('customer');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,14 +83,12 @@ export function LoginPage() {
       setError('Network error. Please try again.');
       setErrorType('error');
     } finally {
-      if (!loading) setLoading(false); // Only unset if we didn't redirect
+      setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
-      // For Google, we redirect to /register first to check if they exist
-      // The register page already has clean logic for Google OAuth pre-fill
       await navigate('/register', { state: { googleAuth: true, role } });
     } catch (err: any) {
       toast.error(err.message || 'Google sign in failed');
@@ -92,236 +110,254 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-start lg:items-center justify-center py-6 sm:py-10 px-4 relative">
-      {/* Animated gradient orbs */}
-      <div className="orb orb-primary w-96 h-96 -top-32 -right-32 animate-float-slow" />
-      <div className="orb orb-emerald w-72 h-72 -bottom-24 -left-24 animate-float-slow" style={{ animationDelay: '2s' }} />
-      <div className="orb orb-teal w-56 h-56 top-1/3 -right-16 animate-float-slow" style={{ animationDelay: '4s' }} />
-      <div className="w-full max-w-md relative z-10 pb-4">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow glow-primary animate-float">
-            <Store className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-[30px]" style={{ fontWeight: 800, letterSpacing: '-0.02em' }}>Welcome Back</h1>
-          <p className="text-muted-foreground mt-1.5 text-[15px]">Sign in to your Kumar Store account</p>
+    <div className="min-h-screen flex flex-col lg:flex-row bg-white relative overflow-hidden">
+      {/* Left: Branding & Benefits (Desktop) */}
+      <div className="hidden lg:flex lg:w-[40%] bg-slate-900 relative p-12 flex-col justify-between overflow-hidden">
+        {/* Abstract shapes for depth */}
+        <div className="absolute top-0 right-0 w-full h-full opacity-20 pointer-events-none">
+          <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary rounded-full blur-[120px]" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[300px] h-[300px] bg-emerald-500 rounded-full blur-[100px]" />
         </div>
 
-        {/* Role Tabs */}
-        <div className="bg-gray-100 rounded-2xl p-1.5 grid grid-cols-2 gap-1 mb-6">
-          {([
-            { id: 'customer' as const, label: 'Customer', icon: User, desc: 'Shop at MRP prices' },
-            { id: 'shopowner' as const, label: 'Shop Owner', icon: Store, desc: 'Wholesale pricing' },
-          ]).map((r) => (
-            <button
-              key={r.id}
-              onClick={() => { setRole(r.id); setError(''); setErrorType(''); setEmail(''); setPassword(''); }}
-              className={`relative p-3.5 rounded-xl text-center transition-all duration-200 ${role === r.id
-                ? 'bg-white shadow-sm'
-                : 'hover:bg-gray-50'
-                }`}
+        <div className="relative z-10">
+          <Link to="/" className="inline-flex items-center gap-3 group">
+            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform shadow-xl">
+              <Store className="w-6 h-6 text-slate-900" />
+            </div>
+            <span className="text-white text-[24px]" style={{ fontWeight: 900 }}>Kumar Store</span>
+          </Link>
+
+          <div className="mt-20">
+            <h2 className="text-white text-[48px] leading-[1.1] tracking-tighter" style={{ fontWeight: 950 }}>
+              Welcome Back to <br />
+              <span className="text-primary">Your Dashboard</span>
+            </h2>
+            <p className="text-white/50 mt-6 text-[18px] max-w-sm font-bold">
+              Sign in to manage your orders, track deliveries, and access exclusive deals.
+            </p>
+          </div>
+        </div>
+
+        <div className="relative z-10 space-y-8">
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={role}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-6"
             >
-              <div className="flex items-center justify-center gap-2">
-                <r.icon className={`w-4.5 h-4.5 ${role === r.id ? 'text-primary' : 'text-gray-400'}`} />
-                <span className={`text-[14px] ${role === r.id ? 'text-foreground' : 'text-gray-500'}`} style={{ fontWeight: role === r.id ? 600 : 400 }}>
-                  {r.label}
-                </span>
-              </div>
-              <p className={`text-[11px] mt-0.5 ${role === r.id ? 'text-primary' : 'text-gray-400'}`}>{r.desc}</p>
-              {role === r.id && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
-              )}
-            </button>
-          ))}
+              {BENEFITS[role].map((b, i) => (
+                <div key={i} className="flex gap-4 group">
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-white/10 transition-colors">
+                    <b.icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-white font-black uppercase tracking-widest text-[14px]">{b.title}</p>
+                    <p className="text-white/40 text-[13px] font-bold">{b.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="pt-8 border-t border-white/10 flex items-center gap-6">
+            <div className="flex -space-x-3">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="w-10 h-10 rounded-full border-2 border-slate-900 bg-slate-800 overflow-hidden">
+                  <img src={`https://i.pravatar.cc/100?u=${i + 10}`} alt="" />
+                </div>
+              ))}
+            </div>
+            <p className="text-white/40 text-[12px] font-bold uppercase tracking-widest">
+              Trusted by 10,000+ Indians
+            </p>
+          </div>
         </div>
+      </div>
 
-        {/* Error/Status Messages */}
-        {error && (
-          <div className={`mb-4 p-4 rounded-xl flex items-start gap-3 text-[14px] animate-in slide-in-from-top-2 duration-200 ${errorType === 'pending'
-            ? 'bg-amber-50 border border-amber-200 text-amber-800'
-            : errorType === 'rejected'
-              ? 'bg-red-50 border border-red-200 text-red-800'
-              : 'bg-red-50 border border-red-200 text-red-700'
-            }`}>
-            {errorType === 'pending' ? (
-              <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-            ) : errorType === 'rejected' ? (
-              <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+      {/* Right: Login Form */}
+      <div className="flex-1 min-h-screen flex flex-col p-6 sm:p-12 lg:p-20 overflow-y-auto">
+        <div className="w-full max-w-md mx-auto">
+          {/* Mobile Back Button */}
+          <Link to="/" className="lg:hidden inline-flex items-center gap-2 text-slate-400 font-bold text-[13px] uppercase tracking-widest mb-8">
+            <ArrowLeft className="w-4 h-4" /> Back
+          </Link>
+
+          <div className="mb-10">
+            <h1 className="text-[36px] tracking-tighter" style={{ fontWeight: 950 }}>Welcome Back</h1>
+            <p className="text-slate-400 font-bold mt-1">Sign in to continue your journey</p>
+          </div>
+
+          {/* Role Selection */}
+          <div className="bg-slate-50 p-1.5 rounded-[24px] grid grid-cols-2 gap-2 mb-10 ring-1 ring-slate-100">
+            {(['customer', 'shopowner'] as const).map((r) => (
+              <button
+                key={r}
+                onClick={() => { setRole(r); setError(''); setErrorType(''); }}
+                className={`py-3.5 rounded-[20px] transition-all duration-500 relative ${
+                  role === r ? 'bg-white shadow-premium-lg' : 'hover:bg-white/50 text-slate-400'
+                }`}
+              >
+                <div className="relative z-10 flex flex-col items-center gap-0.5">
+                  <span className={`text-[14px] font-black uppercase tracking-widest ${role === r ? 'text-slate-900' : 'text-slate-400'}`}>
+                    {r === 'customer' ? 'Customer' : 'Shop Owner'}
+                  </span>
+                  <p className="text-[10px] font-bold opacity-50">{r === 'customer' ? 'Personal' : 'Business'}</p>
+                </div>
+                {role === r && (
+                  <motion.div 
+                    layoutId="role-bg"
+                    className="absolute inset-0 bg-white rounded-[20px] shadow-sm"
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Error/Status Messages */}
+          <AnimatePresence>
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className={`mb-6 p-4 rounded-2xl flex items-start gap-3 border ${
+                  errorType === 'pending'
+                    ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    : 'bg-red-50 border-red-200 text-red-800'
+                }`}
+              >
+                {errorType === 'pending' ? (
+                  <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                )}
+                <div className="text-[14px]">
+                  <p className="font-black uppercase tracking-tight">
+                    {errorType === 'pending' ? 'Approval Pending' : 'Sign In Failed'}
+                  </p>
+                  <p className="mt-0.5 font-medium opacity-90">{error}</p>
+                </div>
+              </motion.div>
             )}
-            <div>
-              <p style={{ fontWeight: 600 }}>
-                {errorType === 'pending' ? 'Approval Pending' : errorType === 'rejected' ? 'Registration Rejected' : 'Sign In Failed'}
-              </p>
-              <p className="mt-0.5 text-[13px]">{error}</p>
-              {errorType === 'pending' && (
-                <p className="mt-2 text-[12px] opacity-80">Your registration is being reviewed. You'll receive access once approved by the admin.</p>
-              )}
-            </div>
-          </div>
-        )}
+          </AnimatePresence>
 
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="bg-white/90 backdrop-blur-xl border border-border/80 rounded-2xl p-6 space-y-5 shadow-premium-lg">
-          {/* Email */}
-          <div>
-            <label className="text-[13px] text-muted-foreground mb-1.5 block" style={{ fontWeight: 500 }}>Email Address</label>
-            <div className={`flex items-center border rounded-xl overflow-hidden transition-all duration-200 focus-glow ${email ? 'border-primary/30 bg-primary/[0.02]' : 'bg-gray-50'
-              } focus-within:border-primary/50`}>
-              <Mail className={`w-4 h-4 ml-3.5 ${email ? 'text-primary' : 'text-muted-foreground'}`} />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                placeholder={role === 'shopowner' ? 'your-shop@email.com' : 'your@email.com'}
-                className="flex-1 px-3 py-3 bg-transparent outline-none text-[14px]"
-                disabled={loading}
-                required
-              />
-              {email && !error && (
-                <ShieldCheck className="w-4 h-4 text-primary/50 mr-3" />
-              )}
-            </div>
-          </div>
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-4">
+              {/* Email */}
+              <div className="space-y-2">
+                <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                  <input 
+                    type="email" 
+                    value={email} 
+                    onChange={(e) => { setEmail(e.target.value); setError(''); }} 
+                    placeholder="name@example.com" 
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold text-[14px]"
+                    disabled={loading} 
+                    required 
+                  />
+                </div>
+              </div>
 
-          {/* Password */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-[13px] text-muted-foreground" style={{ fontWeight: 500 }}>Password</label>
-              <button type="button" className="text-[12px] text-primary hover:underline" style={{ fontWeight: 500 }}>Forgot password?</button>
+              {/* Password */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest">Password</label>
+                  <button type="button" className="text-[11px] font-black text-primary uppercase tracking-widest hover:underline">Forgot?</button>
+                </div>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                  <input 
+                    type={showPassword ? 'text' : 'password'} 
+                    value={password} 
+                    onChange={(e) => { setPassword(e.target.value); setError(''); }} 
+                    placeholder="••••••••" 
+                    className="w-full pl-12 pr-12 py-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold text-[14px]"
+                    disabled={loading} 
+                    required 
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                    {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className={`flex items-center border rounded-xl overflow-hidden transition-all duration-200 focus-glow ${password ? 'border-primary/30 bg-primary/[0.02]' : 'bg-gray-50'
-              } focus-within:border-primary/50`}>
-              <Lock className={`w-4 h-4 ml-3.5 ${password ? 'text-primary' : 'text-muted-foreground'}`} />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                placeholder="Enter your password"
-                className="flex-1 px-3 py-3 bg-transparent outline-none text-[14px]"
+
+            {/* Action Buttons */}
+            <div className="pt-4 space-y-6">
+              <button
+                type="submit"
                 disabled={loading}
-                required
-              />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="pr-3.5 hover:opacity-70 transition-opacity">
-                {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-2xl shadow-slate-900/20 hover:bg-slate-800 transition-all active:scale-[0.98] disabled:opacity-70"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                  <>
+                    Sign In <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center gap-4">
+                <div className="flex-1 h-px bg-slate-100" />
+                <span className="text-[12px] font-black text-slate-300 uppercase tracking-widest">or continue with</span>
+                <div className="flex-1 h-px bg-slate-100" />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                className="w-full py-4 bg-white border-2 border-slate-100 rounded-2xl flex items-center justify-center gap-3 font-bold text-[15px] hover:bg-slate-50 transition-all active:scale-[0.98]"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                </svg>
+                Google
               </button>
             </div>
-          </div>
+          </form>
 
-          {/* Remember Me */}
-          <div className="flex items-center gap-2">
-            <input type="checkbox" id="remember" className="accent-primary w-4 h-4 rounded" />
-            <label htmlFor="remember" className="text-[13px] text-muted-foreground cursor-pointer select-none">
-              Keep me signed in on this device
-            </label>
-          </div>
-
-          {/* Sign In Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 bg-gradient-to-r from-primary to-emerald-600 text-white rounded-xl hover:from-primary/90 hover:to-emerald-600/90 transition-all flex items-center justify-center gap-2.5 text-[15px] disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 active:scale-[0.99] btn-press"
-            style={{ fontWeight: 600 }}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Signing in...
-              </>
-            ) : (
-              <>
-                Sign in as {role === 'shopowner' ? 'Shop Owner' : 'Customer'}
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-
-          {/* Google SSO Divider */}
-          <div className="flex items-center gap-3 mt-4 mb-4">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-[12px] text-muted-foreground">or continue with</span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-
-          {/* Google Button */}
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            className="w-full py-3 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center gap-2.5 text-[14px] disabled:opacity-70 disabled:cursor-not-allowed shadow-sm active:scale-[0.99] mb-4"
-            style={{ fontWeight: 500 }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-            </svg>
-            Google
-          </button>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-[12px] text-muted-foreground">or try a demo account</span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-
-          {/* Demo Credentials Card */}
-          <div className="bg-gradient-to-br from-primary/5 to-primary/[0.02] border border-primary/15 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <p className="text-[13px] text-primary" style={{ fontWeight: 600 }}>Demo {role === 'shopowner' ? 'Shop Owner' : 'Customer'} Account</p>
-            </div>
-            <div className="bg-white/70 rounded-lg p-3 space-y-1.5 text-[13px]">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Email:</span>
-                <code className="bg-gray-100 px-2 py-0.5 rounded text-[12px]">{demoCredentials[role].email}</code>
+          {/* Demo Account Section */}
+          <div className="mt-10 p-6 bg-slate-50 rounded-[32px] border border-slate-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-primary" />
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Password:</span>
-                <code className="bg-gray-100 px-2 py-0.5 rounded text-[12px]">{demoCredentials[role].password}</code>
+              <div>
+                <p className="text-[14px] font-black text-slate-900 uppercase tracking-tight">Try Demo Account</p>
+                <p className="text-[11px] font-bold text-slate-400">One-click sign in for testing</p>
               </div>
             </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="bg-white p-3 rounded-2xl border border-slate-100">
+                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Email</p>
+                <p className="text-[12px] font-bold text-slate-700 truncate">{demoCredentials[role].email}</p>
+              </div>
+              <div className="bg-white p-3 rounded-2xl border border-slate-100">
+                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Password</p>
+                <p className="text-[12px] font-bold text-slate-700">password123</p>
+              </div>
+            </div>
+
             <button
-              type="button"
               onClick={fillDemo}
-              disabled={loading}
-              className="mt-3 w-full py-2 border border-primary/30 text-primary rounded-lg text-[13px] hover:bg-primary/5 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
-              style={{ fontWeight: 600 }}
+              className="w-full py-3 bg-primary/10 text-primary rounded-xl text-[13px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all flex items-center justify-center gap-2"
             >
-              <ArrowRight className="w-3.5 h-3.5" />
-              Auto-fill & Sign In
+              Fill & Sign In <Zap className="w-3.5 h-3.5 fill-current" />
             </button>
           </div>
 
-          {/* Shop Owner Note */}
-          {role === 'shopowner' && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-[13px] text-amber-800 flex items-start gap-2.5">
-              <Store className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <p style={{ fontWeight: 600 }}>New Shop Owner?</p>
-                <p className="mt-0.5">Register your shop first. Shop accounts require admin approval before you can sign in.</p>
-              </div>
-            </div>
-          )}
-        </form>
-
-        {/* Sign Up Link */}
-        <div className="text-center mt-6 space-y-3">
-          <p className="text-[14px] text-muted-foreground">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-primary hover:underline" style={{ fontWeight: 600 }}>
-              Create Account
-            </Link>
-          </p>
-          <div className="flex items-center justify-center gap-4 text-[12px] text-muted-foreground">
-            <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> Secure Login</span>
-            <span>•</span>
-            <span>256-bit Encryption</span>
-            <span>•</span>
-            <span>Privacy Protected</span>
+          <div className="mt-12 text-center pb-12">
+            <p className="text-[14px] text-slate-400 font-bold">
+              New to Kumar Store?{' '}
+              <Link to="/register" className="text-primary hover:underline">Create Account</Link>
+            </p>
           </div>
         </div>
       </div>
