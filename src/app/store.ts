@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import * as api from './api';
 import { products as seedProducts } from './data';
 import { supabase } from './services/supabase';
+import { sanitizeInput, checkRateLimit } from './utils/security';
 
 export type UserRole = 'customer' | 'shopowner' | 'admin';
 
@@ -399,7 +400,12 @@ export const useStore = create<AppState>((set, get) => ({
 
   // ─── Auth actions (Supabase) ───
   login: async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    // Rate limit login attempts to prevent brute force
+    if (!checkRateLimit(`login_${email.trim()}`, 3000)) {
+      return { success: false, error: 'Too many attempts. Please wait 3 seconds.' };
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) return { success: false, error: error.message };
     return { success: true };
   },
@@ -431,14 +437,24 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   registerCustomer: async (payload) => {
+    // 1. Rate limiting check
+    if (!checkRateLimit(`register_${payload.email}`, 5000)) {
+      return { success: false, error: 'Too many registration attempts. Please wait.' };
+    }
+
+    // 2. Sanitize user inputs
+    const sanitizedName = sanitizeInput(payload.name);
+    const sanitizedPhone = sanitizeInput(payload.phone);
+    const sanitizedAddress = sanitizeInput(payload.address || '');
+
     const { data: authData, error } = await supabase.auth.signUp({
       email: payload.email,
       password: payload.password!,
       options: {
         data: {
-          name: payload.name,
-          phone: payload.phone,
-          address: payload.address,
+          name: sanitizedName,
+          phone: sanitizedPhone,
+          address: sanitizedAddress,
           role: 'customer'
         }
       }
@@ -450,9 +466,9 @@ export const useStore = create<AppState>((set, get) => ({
         await api.createUser({
           id: authData.user.id,
           email: payload.email,
-          name: payload.name,
-          phone: payload.phone,
-          address: payload.address,
+          name: sanitizedName,
+          phone: sanitizedPhone,
+          address: sanitizedAddress,
           role: 'customer',
           date: new Date().toISOString()
         });
@@ -464,15 +480,26 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   registerShopOwner: async (request) => {
+    // 1. Rate limiting check
+    if (!checkRateLimit(`register_shop_${request.email}`, 5000)) {
+      return { success: false, error: 'Too many registration attempts. Please wait.' };
+    }
+
+    // 2. Sanitize user inputs
+    const sanitizedName = sanitizeInput(request.name);
+    const sanitizedPhone = sanitizeInput(request.phone);
+    const sanitizedShopName = sanitizeInput(request.shopName);
+    const sanitizedShopLocation = sanitizeInput(request.shopLocation);
+
     const { data: authData, error } = await supabase.auth.signUp({
       email: request.email,
       password: request.password,
       options: {
         data: {
-          name: request.name,
-          phone: request.phone,
-          shopName: request.shopName,
-          shopLocation: request.shopLocation,
+          name: sanitizedName,
+          phone: sanitizedPhone,
+          shopName: sanitizedShopName,
+          shopLocation: sanitizedShopLocation,
           shopLocationUrl: request.shopLocationUrl,
           role: 'shopowner',
           approved: false
@@ -485,11 +512,11 @@ export const useStore = create<AppState>((set, get) => ({
       try {
         await api.createShopRequest({
           id: authData.user.id,
-          name: request.name,
+          name: sanitizedName,
           email: request.email,
-          phone: request.phone,
-          shopName: request.shopName,
-          shopLocation: request.shopLocation,
+          phone: sanitizedPhone,
+          shopName: sanitizedShopName,
+          shopLocation: sanitizedShopLocation,
           shopLocationUrl: request.shopLocationUrl,
           status: 'pending',
           date: new Date().toISOString()
@@ -1074,9 +1101,16 @@ export const useStore = create<AppState>((set, get) => ({
   addReview: async (payload) => {
     const { user } = get();
     if (!user) throw new Error('Must be logged in to review');
+    
+    // Rate limit reviews to prevent spam
+    if (!checkRateLimit(`review_${user.id}_${payload.productId}`, 10000)) {
+      throw new Error('Please wait before posting another review.');
+    }
+
     try {
       await api.createReview({
         ...payload,
+        comment: sanitizeInput(payload.comment),
         userId: user.id,
         userName: user.name,
       });

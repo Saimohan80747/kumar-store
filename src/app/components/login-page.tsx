@@ -30,6 +30,7 @@ export function LoginPage() {
   const [role, setRole] = useState<'customer' | 'shopowner'>('customer');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [errorType, setErrorType] = useState<'pending' | 'rejected' | 'error' | ''>('');
@@ -39,6 +40,14 @@ export function LoginPage() {
     e.preventDefault();
     setError('');
     setErrorType('');
+
+    // Bot check (Honeypot)
+    if (honeypot) {
+      console.warn('Bot login detected');
+      setError('Authentication failed. Please try again.');
+      setErrorType('error');
+      return;
+    }
 
     if (!email.trim()) {
       setError('Please enter your email address');
@@ -287,6 +296,18 @@ export function LoginPage() {
 
             {/* Action Buttons */}
             <div className="pt-4 space-y-6">
+              {/* Honeypot field (Anti-bot) */}
+              <div className="hidden" aria-hidden="true">
+                <input
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+
               <button
                 type="submit"
                 disabled={loading}

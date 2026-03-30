@@ -8,6 +8,7 @@ import {
 import { useStore } from '../store';
 import { Toaster } from 'sonner';
 import { toast } from 'sonner';
+import { isDeviceBlocked, setPersistentBlock } from '../utils/security';
 
 // The admin password — change this to your own secret password
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'saimohan';
@@ -43,9 +44,7 @@ export function AdminLayout() {
     const saved = localStorage.getItem('admin_login_attempts');
     return saved ? parseInt(saved, 10) : 0;
   });
-  const [isBlocked, setIsBlocked] = useState(() => {
-    return localStorage.getItem('admin_account_blocked') === 'true';
-  });
+  const [isBlocked, setIsBlocked] = useState(() => isDeviceBlocked());
   const pendingCount = shopRequests.filter((r) => r.status === 'pending').length;
   const pendingProductReqs = productRequests.filter((r) => r.status === 'pending').length;
 
@@ -115,7 +114,7 @@ export function AdminLayout() {
 
       if (newAttempts >= 5) {
         setIsBlocked(true);
-        localStorage.setItem('admin_account_blocked', 'true');
+        setPersistentBlock('Too many failed administrative login attempts');
         setError('Too many failed attempts. This account is now blocked.');
         return;
       }

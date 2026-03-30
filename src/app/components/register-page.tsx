@@ -106,6 +106,7 @@ export function RegisterPage() {
     shopLocation: '',
     shopLocationUrl: '',
     language: 'en',
+    honeypot: '', // Honeypot field to catch bots
   });
   const [googlePrefilled, setGooglePrefilled] = useState(false);
   const [googleUserId, setGoogleUserId] = useState<string | null>(null);
@@ -171,14 +172,21 @@ export function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check global block status
+    // 1. Bot check (Honeypot)
+    if (form.honeypot) {
+      console.warn('Bot submission detected via honeypot');
+      toast.error('Submission rejected due to security policy violation.');
+      return;
+    }
+
+    // 2. Check global block status
     const isLocalBlocked = localStorage.getItem('admin_account_blocked') === 'true';
     if (isLocalBlocked) {
       toast.error('This device has been restricted from creating new accounts due to security violations.', { duration: 5000 });
       return;
     }
 
-    // Check if the email or phone is already blocked in the database
+    // 3. Check if the email or phone is already blocked in the database
     const isBlockedUser = registeredUsers.some(u => 
       u.blocked && (u.email.toLowerCase() === form.email.trim().toLowerCase() || u.phone.trim() === form.phone.trim())
     );
@@ -193,11 +201,21 @@ export function RegisterPage() {
     if (!form.email.trim()) { toast.error('Please enter your email address'); return; }
     if (!form.phone.trim()) { toast.error('Please enter your phone number'); return; }
     if (form.phone.trim().length < 10) { toast.error('Please enter a valid 10-digit phone number'); return; }
-    // Password only required for non-Google users
+    
+    // 4. Enhanced Password Validation (only required for non-Google users)
     if (!googlePrefilled) {
       if (!form.password) { toast.error('Please create a password'); return; }
-      if (form.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
-      if (form.password !== form.confirmPassword) { toast.error('Passwords do not match'); return; }
+      
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(form.password)) {
+        toast.error('Security Upgrade: Password must be at least 8 characters, include uppercase, lowercase, number, and special character (@$!%*?&)');
+        return;
+      }
+
+      if (form.password !== form.confirmPassword) {
+        toast.error('Passwords do not match');
+        return;
+      }
     }
 
     // Remove manual local checks as Supabase will handle email uniqueness verification
@@ -427,6 +445,20 @@ export function RegisterPage() {
       selectField.dispatchEvent(new Event('change'));
     }
   };
+
+  const calculatePasswordStrength = (pass: string) => {
+    if (!pass) return 0;
+    let strength = 0;
+    if (pass.length >= 8) strength++;
+    if (/[A-Z]/.test(pass)) strength++;
+    if (/[0-9]/.test(pass)) strength++;
+    if (/[@$!%*?&]/.test(pass)) strength++;
+    return strength;
+  };
+
+  const passwordStrength = calculatePasswordStrength(form.password);
+  const strengthLabels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+  const strengthColors = ['', 'bg-red-500', 'bg-orange-500', 'bg-blue-500', 'bg-emerald-500'];
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white relative overflow-hidden">
@@ -679,6 +711,28 @@ export function RegisterPage() {
                   </button>
                 </div>
 
+                {/* Password Strength Indicator */}
+                {form.password && (
+                  <div className="space-y-2 px-1">
+                    <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest">
+                      <span className="text-slate-400">Security Strength: {strengthLabels[passwordStrength]}</span>
+                      <span className={passwordStrength >= 4 ? 'text-emerald-500' : 'text-slate-400'}>
+                        {passwordStrength >= 4 ? 'Verified Secure' : 'Weak (Add Uppercase/Number/Symbol)'}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden flex gap-1">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div 
+                          key={i} 
+                          className={`h-full flex-1 rounded-full transition-all duration-500 ${
+                            passwordStrength >= i ? strengthColors[passwordStrength] : 'bg-slate-200'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 group-focus-within:text-primary transition-colors" />
                   <input 
@@ -699,6 +753,18 @@ export function RegisterPage() {
 
             {/* Action */}
             <div className="pt-8 space-y-6">
+              {/* Honeypot field (Anti-bot) */}
+              <div className="hidden" aria-hidden="true">
+                <input
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={form.honeypot}
+                  onChange={(e) => update('honeypot', e.target.value)}
+                />
+              </div>
+
               <button
                 type="submit"
                 disabled={loading}

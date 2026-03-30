@@ -6,13 +6,14 @@ import { Toaster } from 'sonner';
 import { useStore } from '../store';
 import { ShieldAlert, Lock, Home, PhoneCall, LogOut } from 'lucide-react';
 import { AiAssistant } from './ai-assistant';
+import { isDeviceBlocked } from '../utils/security';
 
 export function Layout() {
   const user = useStore((s) => s.user);
   const logout = useStore((s) => s.logout);
   const location = useLocation();
   const navigate = useNavigate();
-  const isLocalBlocked = localStorage.getItem('admin_account_blocked') === 'true';
+  const isLocalBlocked = isDeviceBlocked();
 
   // Redirect admin users away from storefront
   if (user?.role === 'admin') {
