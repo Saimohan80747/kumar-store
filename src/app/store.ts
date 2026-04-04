@@ -583,6 +583,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   // ─── Cart ───
   addToCart: (product, qty = 1) => {
+    if (product.stock <= 0) {
+      return;
+    }
+
     const { cart, user } = get();
     const existing = cart.find((i) => i.product.id === product.id);
     const currentQty = existing ? existing.quantity : 0;
@@ -592,7 +596,10 @@ export const useStore = create<AppState>((set, get) => ({
       // Already at stock limit
       return;
     }
-    const safeQty = product.stock > 0 ? Math.min(qty, maxAdd) : qty; // If stock is 0 data, allow (out-of-stock handled in UI)
+    const safeQty = Math.min(qty, maxAdd);
+    if (safeQty <= 0) {
+      return;
+    }
     let newCart: CartItem[];
     if (existing) {
       newCart = cart.map((i) =>
@@ -627,6 +634,10 @@ export const useStore = create<AppState>((set, get) => ({
     const item = get().cart.find((i) => i.product.id === productId);
     const maxQty = item ? item.product.stock : qty;
     const safeQty = Math.min(qty, maxQty);
+    if (safeQty <= 0) {
+      get().removeFromCart(productId);
+      return;
+    }
     set({
       cart: get().cart.map((i) =>
         i.product.id === productId ? { ...i, quantity: safeQty } : i
