@@ -891,7 +891,15 @@ export const useStore = create<AppState>((set, get) => ({
       // Persist to database
       try {
         await api.updateOrder(orderId, { status, adminProfit, shopProfit, customerSavings });
-        // TODO: Add user update API call when available
+        if (order.userId) {
+          const updatedOrderUser = updatedUsers.find((u) => u.id === order.userId);
+          if (updatedOrderUser) {
+            await api.updateUser(order.userId, {
+              totalSavings: updatedOrderUser.totalSavings || 0,
+              totalProfit: updatedOrderUser.totalProfit || 0,
+            });
+          }
+        }
       } catch (err) {
         console.error('Update order status error:', err);
       }
