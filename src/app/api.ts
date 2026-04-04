@@ -17,10 +17,20 @@ const REST_HEADERS: Record<string, string> = {
 };
 
 /** Fetch with automatic timeout (default 12s) to prevent indefinite hanging */
-function fetchWithTimeout(url: string, options?: RequestInit, timeoutMs = 12000): Promise<Response> {
+async function fetchWithTimeout(url: string, options?: RequestInit, timeoutMs = 12000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error(`Request timed out after ${timeoutMs}ms`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function request(path: string, options?: RequestInit) {
