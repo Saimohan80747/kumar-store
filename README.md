@@ -1,214 +1,225 @@
+# Kumar Store Commerce Platform
 
-  # Kumar Store Commerce Platform
+> A fast wholesale + retail commerce experience with customer storefront, shop-owner onboarding, and admin operations in one unified web app.
 
-  Fast, modern wholesale + retail commerce experience built with React, TypeScript, Vite, Tailwind CSS, and Supabase.
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-Backend-3FCF8E?logo=supabase&logoColor=white)
 
-  This repository includes:
-  - A complete customer storefront
-  - A dedicated admin control panel
-  - Shop owner onboarding and approval workflows
-  - Cart, checkout, order tracking, coupons, notifications, and reviews
-  - Supabase-backed persistence with a resilient fallback to seed data
+Original design source:  
+https://www.figma.com/design/iECVv2Xqi46cAbwXBlYWTI/Build-Extraordinary-Website
 
-  Original design source:
-  https://www.figma.com/design/iECVv2Xqi46cAbwXBlYWTI/Build-Extraordinary-Website
+## Table of Contents
 
-  ## Why This Project Stands Out
+- [Why This Project Is Strong](#why-this-project-is-strong)
+- [Experience Map](#experience-map)
+- [Architecture Snapshot](#architecture-snapshot)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [Environment Variables](#environment-variables)
+- [Scripts](#scripts)
+- [Routing Reference](#routing-reference)
+- [Backend and Data Strategy](#backend-and-data-strategy)
+- [Deployment](#deployment)
+- [Security and Reliability](#security-and-reliability)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
 
-  - Multi-role commerce flow in one codebase: customer, shop owner, and admin
-  - Route-level lazy loading for storefront and admin performance
-  - Clean component architecture with reusable UI primitives
-  - Serverless-first backend model using Supabase Edge + PostgREST
-  - Production-friendly deployment setup for both Netlify and Vercel
+## Why This Project Is Strong
 
-  ## Core Experiences
+- Multi-role commerce in one app: customer, shop owner, admin
+- Route-level lazy loading for large screens and admin flows
+- Supabase-powered backend with graceful fallback to seeded data
+- Production-ready hosting setup for both Netlify and Vercel
 
-  ### Storefront
-  - Home, products, product detail, cart, checkout
-  - Account, orders, order tracking, wishlist, savings
-  - Category browsing, brand discovery, and featured collections
+## Experience Map
 
-  ### Shop Owner
-  - Registration request flow
-  - Approval-driven access
-  - Shop dashboard and role-based pricing behavior
+| Persona | What They Can Do | Core Routes |
+| --- | --- | --- |
+| Customer | Browse products, manage cart, checkout, track orders, save wishlist | `/`, `/products`, `/product/:id`, `/cart`, `/checkout`, `/orders`, `/wishlist`, `/account` |
+| Shop Owner | Request onboarding, access dashboard after approval, monitor operations | `/register`, `/shop-dashboard` |
+| Admin | Manage orders, products, customers, approvals, coupons, analytics, settings | `/admin`, `/admin/orders`, `/admin/products`, `/admin/customers`, `/admin/analytics` |
 
-  ### Admin
-  - Overview dashboard
-  - Orders management
-  - Product management and stock updates
-  - Customer and shop approvals
-  - Coupons, analytics, product requests, settings
+## Architecture Snapshot
 
-  ## Tech Stack
+```text
+src/
+  app/
+    components/      -> Storefront + Admin UI views
+    services/        -> Supabase + speech service clients
+    api.ts           -> Request orchestration layer
+    routes.ts        -> Public/Admin route map
+    store.ts         -> App state and business logic
+  main.tsx
 
-  - Framework: React 18 + TypeScript
-  - Bundler: Vite 6
-  - Routing: React Router 7
-  - State: Zustand
-  - Styling: Tailwind CSS 4 + custom theme layers
-  - UI Primitives: Radix UI + custom components
-  - Charts: Recharts
-  - Backend: Supabase (Auth, Edge Functions, PostgREST)
-  - Motion: Motion
+supabase/
+  functions/
+    make-server-8a0a2a06/   -> Edge function handlers
+  migrations/               -> SQL schema updates
 
-  ## Project Structure
+styles/                     -> Theme and global styling
+utils/                      -> Shared runtime utilities
+```
 
-  ```text
-  .
-  |- src/
-  |  |- app/
-  |  |  |- components/        # storefront + admin UI
-  |  |  |- services/          # Supabase + speech service clients
-  |  |  |- api.ts             # backend request layer
-  |  |  |- routes.ts          # app and admin routing
-  |  |  |- store.ts           # global app state and business logic
-  |  |- main.tsx
-  |- supabase/
-  |  |- functions/
-  |  |  |- make-server-8a0a2a06/
-  |  |- migrations/
-  |- styles/
-  |- utils/
-  |- netlify.toml
-  |- vercel.json
-  |- vite.config.ts
-  ```
+Data flow at a glance:
 
-  ## Quick Start
+1. UI events trigger actions in store/API modules.
+2. API layer calls Supabase Edge Functions and PostgREST.
+3. Responses update app state and reactive UI.
+4. If backend is unavailable, seeded product data keeps the app usable.
 
-  ### 1. Install dependencies
+## Tech Stack
 
-  ```bash
-  npm install
-  ```
+| Layer | Technology |
+| --- | --- |
+| Frontend | React 18, TypeScript, Vite |
+| Routing | React Router 7 |
+| State | Zustand |
+| Styling | Tailwind CSS 4, custom theme layers |
+| UI Primitives | Radix UI, custom component system |
+| Visualization | Recharts |
+| Backend | Supabase Auth, Edge Functions, PostgREST |
+| Motion | Motion |
 
-  ### 2. Create environment file
+## Quick Start
 
-  Create a `.env` file in the project root:
+### 1) Install dependencies
 
-  ```env
-  VITE_SUPABASE_URL=https://your-project-id.supabase.co
-  VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
-  VITE_SARVAM_API_KEY=your-sarvam-key
-  ```
+```bash
+npm install
+```
 
-  Notes:
-  - `VITE_SARVAM_API_KEY` is optional unless you enable speech features.
-  - If Supabase values are missing, auth-dependent features will not work.
+### 2) Create .env
 
-  ### 3. Start development server
+```env
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+VITE_SARVAM_API_KEY=your-sarvam-key
+```
 
-  ```bash
-  npm run dev
-  ```
+Notes:
 
-  ### 4. Build for production
+- `VITE_SARVAM_API_KEY` is optional unless speech features are enabled.
+- Missing Supabase values will block auth and live backend operations.
 
-  ```bash
-  npm run build
-  ```
+### 3) Run locally
 
-  ## Available Scripts
+```bash
+npm run dev
+```
 
-  - `npm run dev` - Launch Vite development server
-  - `npm run build` - Create production build in `dist/`
+### 4) Build for production
 
-  ## Routing Overview
+```bash
+npm run build
+```
 
-  ### Public / Customer routes
-  - `/`
-  - `/products`
-  - `/product/:id`
-  - `/cart`
-  - `/checkout`
-  - `/login`
-  - `/register`
-  - `/orders`
-  - `/orders/:id`
-  - `/wishlist`
-  - `/savings`
-  - `/account`
-  - `/shop-dashboard`
+## Environment Variables
 
-  ### Admin routes
-  - `/admin`
-  - `/admin/orders`
-  - `/admin/products`
-  - `/admin/shop-approvals`
-  - `/admin/customers`
-  - `/admin/coupons`
-  - `/admin/analytics`
-  - `/admin/product-requests`
-  - `/admin/settings`
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `VITE_SUPABASE_URL` | Yes | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Yes | Client-side anon key for auth and data calls |
+| `VITE_SARVAM_API_KEY` | Optional | Enables speech/voice-related features |
 
-  ## Data Layer and Backend
+## Scripts
 
-  The application uses a hybrid backend approach:
+- `npm run dev` - Start Vite development server
+- `npm run build` - Build production assets into `dist/`
 
-  - Supabase Edge Functions for core operations (users, orders, products, coupons, analytics)
-  - Supabase PostgREST for direct table operations (cart items, notifications, reviews, product requests)
+## Routing Reference
 
-  Edge Function base path:
-  - `https://<project-id>.supabase.co/functions/v1/make-server-8a0a2a06`
+### Public and Customer
 
-  If backend initialization fails, the app gracefully continues with seeded product data so the UI remains usable.
+- `/`
+- `/products`
+- `/product/:id`
+- `/cart`
+- `/checkout`
+- `/login`
+- `/register`
+- `/orders`
+- `/orders/:id`
+- `/wishlist`
+- `/savings`
+- `/account`
+- `/shop-dashboard`
 
-  ## Deployment
+### Admin
 
-  ### Netlify
+- `/admin`
+- `/admin/orders`
+- `/admin/products`
+- `/admin/shop-approvals`
+- `/admin/customers`
+- `/admin/coupons`
+- `/admin/analytics`
+- `/admin/product-requests`
+- `/admin/settings`
 
-  `netlify.toml` is already configured:
-  - Build command: `npm run build`
-  - Publish directory: `dist`
-  - SPA fallback redirect to `index.html`
+## Backend and Data Strategy
 
-  ### Vercel
+The app uses a hybrid model:
 
-  `vercel.json` includes SPA rewrite rules:
-  - All routes are rewritten to `index.html`
+- Supabase Edge Functions for core business operations (users, orders, products, coupons, analytics)
+- Supabase PostgREST for direct table-driven workflows (cart items, notifications, reviews, product requests)
 
-  ## Security and Reliability Notes
+Edge function base pattern:
 
-  - Login attempts are rate-limited in client logic to reduce brute-force abuse
-  - Input sanitization utilities are applied in critical auth and form flows
-  - Request timeout handling prevents long-hanging network calls
-  - Global error boundary protects route rendering failures
+- `https://<project-id>.supabase.co/functions/v1/make-server-8a0a2a06`
 
-  ## Database and Migrations
+## Deployment
 
-  SQL migrations are located in:
+### Netlify
 
-  - `supabase/migrations/`
+Configured in `netlify.toml`:
 
-  Before production release:
-  - Apply migrations to your Supabase project
-  - Verify Row Level Security and table policies
-  - Confirm anon/public keys are appropriate for your environment
+- Build command: `npm run build`
+- Publish directory: `dist`
+- SPA fallback redirect to `index.html`
 
-  ## Troubleshooting
+### Vercel
 
-  ### App loads but login fails
-  - Confirm `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set correctly.
+Configured in `vercel.json`:
 
-  ### Speech actions are unavailable
-  - Set `VITE_SARVAM_API_KEY` in `.env`.
+- SPA rewrite rules route all paths to `index.html`
 
-  ### Deep links return 404 in hosting
-  - Ensure SPA rewrites are enabled (already configured for Netlify and Vercel).
+## Security and Reliability
 
-  ### Build succeeds but data is empty
-  - Verify Supabase tables, policies, and Edge Function deployment.
+- Login attempts are rate-limited in client logic
+- Input sanitization is applied to critical auth/form paths
+- Request timeout protection prevents long-hanging API calls
+- Global error boundary protects route rendering failures
 
-  ## Contributing
+## Troubleshooting
 
-  1. Create a feature branch.
-  2. Keep UI and business logic changes scoped and atomic.
-  3. Run a local build before opening a pull request.
-  4. Include screenshots for visual updates.
+### Login fails
 
-  ## License
+- Verify `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` values.
 
-  No license file is currently defined in this repository.
-  If this will be shared publicly, add a license before distribution.
-  
+### Speech actions not available
+
+- Add `VITE_SARVAM_API_KEY` in `.env`.
+
+### Deep links return 404 on deploy
+
+- Confirm SPA rewrites are enabled (already configured for Netlify and Vercel).
+
+### Build passes but data appears empty
+
+- Validate Supabase tables, policies, and Edge Function deployment.
+
+## Contributing
+
+1. Create a dedicated feature branch.
+2. Keep UI and logic changes focused and atomic.
+3. Run a local production build before opening a PR.
+4. Add screenshots for visual changes.
+
+## License
+
+No license file is currently defined.  
+If this repository will be shared publicly, add a license before distribution.
