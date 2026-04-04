@@ -28,19 +28,28 @@ async function request(path: string, options?: RequestInit) {
     ...options,
     headers: { ...EDGE_HEADERS, ...(options?.headers || {}) },
   });
-  
+
   const text = await res.text();
-  try {
-    const data = text ? JSON.parse(text) : {};
-    if (!res.ok) {
-      console.error(`API error [${res.status}] ${path}:`, data);
-      throw new Error(data.error || `Request failed: ${res.status}`);
+
+  let data: any = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      if (!res.ok) {
+        throw new Error(`Request failed: ${res.status}`);
+      }
+      console.error(`JSON Parse Error on ${path}:`, text.slice(0, 200)); // Log first 200 chars for debugging
+      throw new Error(`Invalid JSON response from ${path}`);
     }
-    return data;
-  } catch (err) {
-    console.error(`JSON Parse Error on ${path}:`, text.slice(0, 200)); // Log first 200 chars for debugging
-    throw new Error(`Invalid JSON response from ${path}`);
   }
+
+  if (!res.ok) {
+    console.error(`API error [${res.status}] ${path}:`, data || text.slice(0, 200));
+    throw new Error(data?.error || data?.message || `Request failed: ${res.status}`);
+  }
+
+  return data;
 }
 
 // ─── Init / Seed ───
