@@ -6,8 +6,8 @@ import { useStore } from './store';
 function DBInit() {
   const initDB = useStore((s) => s.initDB);
   useEffect(() => {
-    initDB();
-  }, []);
+    void initDB();
+  }, [initDB]);
   return null;
 }
 
