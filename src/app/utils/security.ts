@@ -54,11 +54,12 @@ export function checkRateLimit(key: string, limitMs: number = 2000): boolean {
 const SECURITY_SALT = 'kumar_store_v1_secure';
 
 export function setPersistentBlock(reason: string): void {
+  const timestamp = Date.now();
   const blockData = {
     blocked: true,
     reason,
-    timestamp: Date.now(),
-    fingerprint: btoa(`${reason}-${Date.now()}-${SECURITY_SALT}`)
+    timestamp,
+    fingerprint: btoa(`${reason}-${timestamp}-${SECURITY_SALT}`)
   };
   localStorage.setItem('admin_account_blocked', JSON.stringify(blockData));
 }
