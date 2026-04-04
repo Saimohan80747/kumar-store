@@ -400,12 +400,14 @@ export const useStore = create<AppState>((set, get) => ({
 
   // ─── Auth actions (Supabase) ───
   login: async (email, password) => {
+    const normalizedEmail = email.trim().toLowerCase();
+
     // Rate limit login attempts to prevent brute force
-    if (!checkRateLimit(`login_${email.trim()}`, 3000)) {
+    if (!checkRateLimit(`login_${normalizedEmail}`, 3000)) {
       return { success: false, error: 'Too many attempts. Please wait 3 seconds.' };
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
     if (error) return { success: false, error: error.message };
     return { success: true };
   },
@@ -437,8 +439,10 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   registerCustomer: async (payload) => {
+    const normalizedEmail = payload.email.trim().toLowerCase();
+
     // 1. Rate limiting check
-    if (!checkRateLimit(`register_${payload.email}`, 5000)) {
+    if (!checkRateLimit(`register_${normalizedEmail}`, 5000)) {
       return { success: false, error: 'Too many registration attempts. Please wait.' };
     }
 
@@ -448,7 +452,7 @@ export const useStore = create<AppState>((set, get) => ({
     const sanitizedAddress = sanitizeInput(payload.address || '');
 
     const { data: authData, error } = await supabase.auth.signUp({
-      email: payload.email,
+      email: normalizedEmail,
       password: payload.password!,
       options: {
         data: {
@@ -465,7 +469,7 @@ export const useStore = create<AppState>((set, get) => ({
       try {
         await api.createUser({
           id: authData.user.id,
-          email: payload.email,
+          email: normalizedEmail,
           name: sanitizedName,
           phone: sanitizedPhone,
           address: sanitizedAddress,
@@ -480,8 +484,10 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   registerShopOwner: async (request) => {
+    const normalizedEmail = request.email.trim().toLowerCase();
+
     // 1. Rate limiting check
-    if (!checkRateLimit(`register_shop_${request.email}`, 5000)) {
+    if (!checkRateLimit(`register_shop_${normalizedEmail}`, 5000)) {
       return { success: false, error: 'Too many registration attempts. Please wait.' };
     }
 
@@ -492,7 +498,7 @@ export const useStore = create<AppState>((set, get) => ({
     const sanitizedShopLocation = sanitizeInput(request.shopLocation);
 
     const { data: authData, error } = await supabase.auth.signUp({
-      email: request.email,
+      email: normalizedEmail,
       password: request.password,
       options: {
         data: {
@@ -513,7 +519,7 @@ export const useStore = create<AppState>((set, get) => ({
         await api.createShopRequest({
           id: authData.user.id,
           name: sanitizedName,
-          email: request.email,
+          email: normalizedEmail,
           phone: sanitizedPhone,
           shopName: sanitizedShopName,
           shopLocation: sanitizedShopLocation,
