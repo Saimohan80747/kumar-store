@@ -173,8 +173,9 @@ export const createProductRequest = async (req: any) => {
 };
 
 export const updateProductRequest = async (id: string, status: string) => {
+  const safeId = encodeURIComponent(id);
   const res = await fetchWithTimeout(
-    `${SUPABASE_REST}/kumar_product_requests?id=eq.${id}`,
+    `${SUPABASE_REST}/kumar_product_requests?id=eq.${safeId}`,
     {
       method: 'PATCH',
       headers: REST_HEADERS,
@@ -188,8 +189,9 @@ export const updateProductRequest = async (id: string, status: string) => {
 
 // ─── Notifications (direct PostgREST) ───
 export const getNotifications = async (userId: string) => {
+  const safeUserId = encodeURIComponent(userId);
   const res = await fetchWithTimeout(
-    `${SUPABASE_REST}/kumar_notifications?user_id=eq.${userId}&select=*&order=created_at.desc`,
+    `${SUPABASE_REST}/kumar_notifications?user_id=eq.${safeUserId}&select=*&order=created_at.desc`,
     { headers: REST_HEADERS }
   );
   const data = await res.json();
@@ -229,8 +231,9 @@ export const createNotification = async (notification: {
 };
 
 export const markNotificationRead = async (id: string) => {
+  const safeId = encodeURIComponent(id);
   const res = await fetchWithTimeout(
-    `${SUPABASE_REST}/kumar_notifications?id=eq.${id}`,
+    `${SUPABASE_REST}/kumar_notifications?id=eq.${safeId}`,
     {
       method: 'PATCH',
       headers: REST_HEADERS,
@@ -245,8 +248,9 @@ export const markNotificationRead = async (id: string) => {
 };
 
 export const markAllNotificationsRead = async (userId: string) => {
+  const safeUserId = encodeURIComponent(userId);
   const res = await fetchWithTimeout(
-    `${SUPABASE_REST}/kumar_notifications?user_id=eq.${userId}&is_read=eq.false`,
+    `${SUPABASE_REST}/kumar_notifications?user_id=eq.${safeUserId}&is_read=eq.false`,
     {
       method: 'PATCH',
       headers: REST_HEADERS,
@@ -261,8 +265,9 @@ export const markAllNotificationsRead = async (userId: string) => {
 };
 
 export const deleteAllNotifications = async (userId: string) => {
+  const safeUserId = encodeURIComponent(userId);
   const res = await fetchWithTimeout(
-    `${SUPABASE_REST}/kumar_notifications?user_id=eq.${userId}`,
+    `${SUPABASE_REST}/kumar_notifications?user_id=eq.${safeUserId}`,
     { method: 'DELETE', headers: REST_HEADERS }
   );
   if (!res.ok) {
@@ -277,8 +282,9 @@ export const getAnalytics = () => request('/analytics');
 
 // ─── Cart (PostgREST direct) ───
 export const getCartItems = async (userId: string): Promise<{ product_id: string; quantity: number }[]> => {
+  const safeUserId = encodeURIComponent(userId);
   const res = await fetchWithTimeout(
-    `${SUPABASE_REST}/kumar_cart_items?user_id=eq.${userId}&select=product_id,quantity`,
+    `${SUPABASE_REST}/kumar_cart_items?user_id=eq.${safeUserId}&select=product_id,quantity`,
     { headers: REST_HEADERS }
   );
   if (!res.ok) return [];
@@ -307,8 +313,10 @@ export const upsertCartItem = async (userId: string, productId: string, quantity
 };
 
 export const removeCartItem = async (userId: string, productId: string) => {
+  const safeUserId = encodeURIComponent(userId);
+  const safeProductId = encodeURIComponent(productId);
   const res = await fetchWithTimeout(
-    `${SUPABASE_REST}/kumar_cart_items?user_id=eq.${userId}&product_id=eq.${productId}`,
+    `${SUPABASE_REST}/kumar_cart_items?user_id=eq.${safeUserId}&product_id=eq.${safeProductId}`,
     { method: 'DELETE', headers: REST_HEADERS }
   );
   if (!res.ok) {
@@ -319,8 +327,9 @@ export const removeCartItem = async (userId: string, productId: string) => {
 };
 
 export const clearCartItems = async (userId: string) => {
+  const safeUserId = encodeURIComponent(userId);
   const res = await fetchWithTimeout(
-    `${SUPABASE_REST}/kumar_cart_items?user_id=eq.${userId}`,
+    `${SUPABASE_REST}/kumar_cart_items?user_id=eq.${safeUserId}`,
     { method: 'DELETE', headers: REST_HEADERS }
   );
   if (!res.ok) {
@@ -332,8 +341,9 @@ export const clearCartItems = async (userId: string) => {
 
 // ─── Reviews (direct PostgREST) ───
 export const getReviews = async (productId: string) => {
+  const safeProductId = encodeURIComponent(productId);
   const res = await fetchWithTimeout(
-    `${SUPABASE_REST}/kumar_reviews?product_id=eq.${productId}&select=*&order=created_at.desc`,
+    `${SUPABASE_REST}/kumar_reviews?product_id=eq.${safeProductId}&select=*&order=created_at.desc`,
     { headers: REST_HEADERS }
   );
   const data = await res.json();
@@ -372,8 +382,9 @@ export const createReview = async (review: any) => {
 };
 
 export const updateReviewLikes = async (id: string, likes: number) => {
+  const safeId = encodeURIComponent(id);
   const res = await fetchWithTimeout(
-    `${SUPABASE_REST}/kumar_reviews?id=eq.${id}`,
+    `${SUPABASE_REST}/kumar_reviews?id=eq.${safeId}`,
     {
       method: 'PATCH',
       headers: REST_HEADERS,
