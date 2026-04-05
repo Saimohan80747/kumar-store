@@ -1,4 +1,4 @@
-import { useState, memo, useMemo, useCallback, useEffect } from 'react';
+import { useState, memo, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
   Search, ShoppingCart, Heart, User, Menu, X, Package,
@@ -336,13 +336,29 @@ export function Navbar() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [userDropdown, setUserDropdown] = useState(false);
   const [notifDropdown, setNotifDropdown] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!searchContainerRef.current || !target) return;
+      if (!searchContainerRef.current.contains(target)) {
+        setSearchOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
   }, []);
 
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
@@ -386,7 +402,7 @@ export function Navbar() {
 
           if (finalQuery) {
             toast.success(`Found: "${finalQuery}"`);
-            navigate('/products');
+            navigate(`/products?search=${encodeURIComponent(finalQuery)}`);
           } else {
             toast.error("Couldn't hear clearly. Try again?");
           }
@@ -414,7 +430,10 @@ export function Navbar() {
 
   const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) navigate('/products');
+    setSearchOpen(false);
+    searchInputRef.current?.blur();
+    const finalQuery = searchQuery.trim();
+    if (finalQuery) navigate(`/products?search=${encodeURIComponent(finalQuery)}`);
   }, [searchQuery, navigate]);
 
   return (
@@ -457,17 +476,28 @@ export function Navbar() {
               </Link>
 
               {/* AI Search Engine */}
-              <div className="flex-1 max-w-2xl relative hidden sm:block">
+              <div ref={searchContainerRef} className="flex-1 max-w-2xl relative hidden sm:block">
                 <form onSubmit={handleSearch} className="relative">
                   <div className={`flex items-center bg-slate-50 border border-slate-100 rounded-[22px] transition-all duration-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-primary/5 focus-within:border-primary/20 group ${scrolled ? 'py-0.5' : ''}`}>
                     <div className="pl-5 text-slate-400 group-focus-within:text-primary transition-colors">
                       <Search className="w-5 h-5" />
                     </div>
                     <input
+                      ref={searchInputRef}
                       type="text"
                       placeholder="Ask our AI assistant to find anything..."
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => setSearchOpen(true)}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setSearchOpen(true);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          setSearchOpen(false);
+                          searchInputRef.current?.blur();
+                        }
+                      }}
                       className="flex-1 px-4 py-3.5 bg-transparent outline-none text-[14px] font-bold text-slate-700 placeholder:text-slate-400"
                     />
                     <div className="flex items-center gap-2 pr-2">
@@ -489,11 +519,13 @@ export function Navbar() {
                 </form>
 
                 <AnimatePresence>
-                  {searchQuery.length >= 2 && (
+                  {searchOpen && searchQuery.trim().length >= 2 && (
                     <SmartSearchSuggestions 
                       query={searchQuery} 
                       onSelect={(q) => {
+                        setSearchOpen(false);
                         setSearchQuery(q);
+                        searchInputRef.current?.blur();
                         navigate(`/products?search=${encodeURIComponent(q)}`);
                       }}
                     />

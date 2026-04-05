@@ -14,6 +14,7 @@ export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const isLocalBlocked = isDeviceBlocked();
+  const isForceAllowedUser = user?.email?.trim().toLowerCase() === 'mohansai152006@gmail.com';
 
   // Redirect admin users away from storefront
   if (user?.role === 'admin') {
@@ -23,7 +24,7 @@ export function Layout() {
   // Global block for both DB-blocked users and locally-blocked admins
   // We allow the home page ('/') to be visible so the "Return to Home" button works,
   // but block all other storefront routes.
-  if ((user?.blocked || isLocalBlocked) && location.pathname !== '/') {
+  if (!isForceAllowedUser && (user?.blocked || isLocalBlocked) && location.pathname !== '/') {
     const handleLogout = async () => {
       await logout();
       navigate('/');

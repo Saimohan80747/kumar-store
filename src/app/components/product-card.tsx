@@ -23,7 +23,8 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
   const isShop = user?.role === 'shopowner';
   const priceDiff = product.mrp - price;
   const discount = isLoggedIn && priceDiff > 0 ? Math.round((priceDiff / product.mrp) * 100) : 0;
-  const isAvailable = product.stock > 0;
+  const stepQty = isShop ? Math.max(1, product.minWholesaleQty || 1) : 1;
+  const isAvailable = product.stock > 0 && (!isShop || product.stock >= stepQty);
   const cartItem = cart.find((item) => item.product.id === product.id);
   const cartQty = cartItem?.quantity || 0;
 
@@ -41,7 +42,7 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
           <div className="flex flex-col gap-2 pointer-events-auto">
             {!isAvailable ? (
               <motion.div initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-lg">
-                <Package className="h-3 w-3" /> Out of Stock
+                <Package className="h-3 w-3" /> {product.stock > 0 ? 'Pack Locked' : 'Out of Stock'}
               </motion.div>
             ) : (
               <>
@@ -93,11 +94,11 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
                 <AnimatePresence mode="wait">
                   {cartQty > 0 ? (
                     <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="flex items-center rounded-[24px] border border-white bg-white/92 p-1.5 shadow-2xl backdrop-blur-xl">
-                      <button onClick={(e) => { e.preventDefault(); updateCartQty(product.id, cartQty - 1); }} className="flex h-11 w-11 items-center justify-center rounded-2xl text-slate-900 transition-all hover:bg-slate-50 active:scale-90">
+                      <button onClick={(e) => { e.preventDefault(); updateCartQty(product.id, cartQty - stepQty); }} className="flex h-11 w-11 items-center justify-center rounded-2xl text-slate-900 transition-all hover:bg-slate-50 active:scale-90">
                         <Minus className="h-4.5 w-4.5" />
                       </button>
                       <span className="flex-1 text-center text-[16px] font-black text-slate-900">{cartQty}</span>
-                      <button onClick={(e) => { e.preventDefault(); updateCartQty(product.id, cartQty + 1); }} className="flex h-11 w-11 items-center justify-center rounded-2xl text-slate-900 transition-all hover:bg-slate-50 active:scale-90">
+                      <button onClick={(e) => { e.preventDefault(); updateCartQty(product.id, cartQty + stepQty); }} className="flex h-11 w-11 items-center justify-center rounded-2xl text-slate-900 transition-all hover:bg-slate-50 active:scale-90">
                         <Plus className="h-4.5 w-4.5" />
                       </button>
                     </motion.div>
@@ -109,7 +110,7 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
                       onClick={(e) => {
                         e.preventDefault();
                         if (!isLoggedIn) { navigate('/login'); return; }
-                        addToCart(product);
+                        addToCart(product, stepQty);
                         toast.success('Added to cart!');
                       }}
                       className="flex w-full items-center justify-center gap-3 rounded-[24px] bg-slate-900 py-4 text-[13px] font-black uppercase tracking-widest text-white opacity-0 shadow-2xl transition-all hover:bg-slate-800 active:scale-95 group-hover:opacity-100"
@@ -163,7 +164,7 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
                       e.preventDefault();
                       if (!isLoggedIn) { navigate('/login'); return; }
                       if (cartQty > 0) navigate('/cart');
-                      else { addToCart(product); toast.success('Added to cart'); }
+                      else { addToCart(product, stepQty); toast.success('Added to cart'); }
                     }}
                     className={`flex h-12 w-12 items-center justify-center rounded-[20px] shadow-xl transition-all active:scale-90 ${cartQty > 0 ? 'bg-primary text-white shadow-primary/20' : 'bg-slate-900 text-white shadow-slate-900/20'}`}
                   >
@@ -171,10 +172,16 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
                   </button>
                 ) : (
                   <button
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.preventDefault();
-                      requestProduct(product.id, product.name);
-                      toast.success('Interest noted!');
+                      if (!isLoggedIn) { navigate('/login'); return; }
+                      try {
+                        await requestProduct(product.id, product.name);
+                        toast.success('Interest noted!');
+                      } catch (err) {
+                        const message = err instanceof Error ? err.message : 'Unable to save request';
+                        toast.error(message);
+                      }
                     }}
                     className="flex h-12 w-12 items-center justify-center rounded-[20px] border border-slate-100 bg-slate-50 text-slate-400"
                   >

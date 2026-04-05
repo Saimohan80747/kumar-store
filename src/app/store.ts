@@ -144,6 +144,58 @@ export interface Notification {
 // Customer gets 40% of the (MRP – wholesale) gap as discount
 export const CUSTOMER_DISCOUNT_RATIO = 0.4;
 
+const FORCED_UNBLOCK_EMAILS = new Set(['mohansai152006@gmail.com']);
+
+function normalizeUserBlock<T extends Partial<User>>(user: T): T {
+  if (!user?.email) return user;
+  if (!FORCED_UNBLOCK_EMAILS.has(user.email.trim().toLowerCase())) return user;
+  return { ...user, blocked: false };
+}
+
+function getCartStep(product: Product, role?: UserRole | null) {
+  return role === 'shopowner' ? Math.max(1, product.minWholesaleQty || 1) : 1;
+}
+
+function normalizeCartQuantity(product: Product, requestedQty: number, role?: UserRole | null) {
+  const step = getCartStep(product, role);
+  const maxQty = Math.max(0, product.stock || 0);
+
+  if (maxQty <= 0) return 0;
+
+  if (role === 'shopowner') {
+    const desiredQty = Math.max(step, requestedQty);
+    let normalized = Math.ceil(desiredQty / step) * step;
+    if (normalized > maxQty) {
+      normalized = Math.floor(maxQty / step) * step;
+    }
+    return normalized >= step ? normalized : 0;
+  }
+
+  return Math.max(1, Math.min(Math.round(requestedQty), maxQty));
+}
+
+function validateCartLine(item: CartItem, role?: UserRole | null) {
+  if (item.product.stock <= 0) {
+    return `"${item.product.name}" is out of stock.`;
+  }
+
+  if (item.quantity > item.product.stock) {
+    return `"${item.product.name}" only has ${item.product.stock} units left.`;
+  }
+
+  if (role === 'shopowner') {
+    const step = getCartStep(item.product, role);
+    if (item.quantity < step) {
+      return `"${item.product.name}" requires at least ${step} ${item.product.unitType.toLowerCase()}s per wholesale order.`;
+    }
+    if (item.quantity % step !== 0) {
+      return `"${item.product.name}" must be ordered in multiples of ${step}.`;
+    }
+  }
+
+  return null;
+}
+
 interface AppState {
   user: User | null;
   registeredUsers: User[];
@@ -295,7 +347,7 @@ export const useStore = create<AppState>((set, get) => ({
         const existingUser = get().registeredUsers.find(ru => ru.id === u.id || ru.email === u.email);
 
         set({
-          user: {
+          user: normalizeUserBlock({
             id: u.id,
             email: u.email!,
             name: meta.full_name || meta.name || existingUser?.name || 'User',
@@ -309,7 +361,7 @@ export const useStore = create<AppState>((set, get) => ({
             blocked: existingUser?.blocked ?? meta.blocked,
             gstNumber: meta.gstNumber || existingUser?.gstNumber,
             creditLimit: existingUser?.creditLimit ?? meta.creditLimit
-          }
+          })
         });
       } else {
         set({ user: null });
@@ -324,7 +376,7 @@ export const useStore = create<AppState>((set, get) => ({
         const existingUser = get().registeredUsers.find(ru => ru.id === u.id || ru.email === u.email);
 
         set({
-          user: {
+          user: normalizeUserBlock({
             id: u.id,
             email: u.email!,
             name: meta.full_name || meta.name || existingUser?.name || 'User',
@@ -338,7 +390,7 @@ export const useStore = create<AppState>((set, get) => ({
             blocked: existingUser?.blocked ?? meta.blocked,
             gstNumber: meta.gstNumber || existingUser?.gstNumber,
             creditLimit: existingUser?.creditLimit ?? meta.creditLimit
-          }
+          })
         });
       } else {
         set({ user: null });
@@ -392,7 +444,20 @@ export const useStore = create<AppState>((set, get) => ({
         }));
       // Use DB products if available, otherwise keep seed data
       const products = (dbProducts && dbProducts.length > 0) ? dbProducts : [...seedProducts];
-      set({ registeredUsers: users, shopRequests, orders, productRequests, products });
+      const registeredUsers = (users || []).map((user: User) => normalizeUserBlock(user));
+      const currentUser = get().user;
+      const syncedUser = currentUser
+        ? registeredUsers.find((user: User) => user.id === currentUser.id || user.email === currentUser.email)
+        : null;
+
+      set({
+        registeredUsers,
+        shopRequests,
+        orders,
+        productRequests,
+        products,
+        ...(syncedUser ? { user: normalizeUserBlock({ ...currentUser!, ...syncedUser }) } : {}),
+      });
     } catch (err) {
       console.error('Error loading data:', err);
     }
@@ -565,16 +630,20 @@ export const useStore = create<AppState>((set, get) => ({
   // ─── Admin: Block/Unblock User ───
   toggleBlockUser: async (userId: string, blocked: boolean) => {
     try {
-      const { registeredUsers } = get();
+      const { registeredUsers, user } = get();
       const updatedUsers = registeredUsers.map((u) =>
-        u.id === userId ? { ...u, blocked } : u
+        u.id === userId ? normalizeUserBlock({ ...u, blocked }) : u
       );
-      set({ registeredUsers: updatedUsers });
+      const userToUpdate = updatedUsers.find((u) => u.id === userId);
+
+      set({
+        registeredUsers: updatedUsers,
+        ...(user && user.id === userId && userToUpdate ? { user: normalizeUserBlock({ ...user, ...userToUpdate }) } : {}),
+      });
 
       // Update in database via API
-      const userToUpdate = updatedUsers.find((u) => u.id === userId);
       if (userToUpdate) {
-        await api.updateUser(userId, { blocked });
+        await api.updateUser(userId, { blocked: userToUpdate.blocked ?? false });
       }
     } catch (err) {
       console.error('Toggle block user error:', err);
@@ -588,31 +657,28 @@ export const useStore = create<AppState>((set, get) => ({
     }
 
     const { cart, user } = get();
+    const role = user?.role;
     const existing = cart.find((i) => i.product.id === product.id);
     const currentQty = existing ? existing.quantity : 0;
-    // Clamp to available stock
-    const maxAdd = Math.max(0, product.stock - currentQty);
-    if (maxAdd <= 0 && product.stock > 0) {
-      // Already at stock limit
+    const normalizedTotal = normalizeCartQuantity(product, currentQty + qty, role);
+
+    if (normalizedTotal <= 0 || normalizedTotal === currentQty) {
       return;
     }
-    const safeQty = Math.min(qty, maxAdd);
-    if (safeQty <= 0) {
-      return;
-    }
+
     let newCart: CartItem[];
     if (existing) {
       newCart = cart.map((i) =>
-        i.product.id === product.id ? { ...i, quantity: i.quantity + safeQty } : i
+        i.product.id === product.id ? { ...i, quantity: normalizedTotal } : i
       );
     } else {
-      newCart = [...cart, { product, quantity: safeQty }];
+      newCart = [...cart, { product, quantity: normalizedTotal }];
     }
     set({ cart: newCart });
     // Persist to Supabase
     if (user) {
       const newItem = newCart.find((i) => i.product.id === product.id);
-      api.upsertCartItem(user.id, product.id, newItem?.quantity || safeQty).catch(console.error);
+      api.upsertCartItem(user.id, product.id, newItem?.quantity || normalizedTotal).catch(console.error);
     }
   },
 
@@ -626,25 +692,21 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateCartQty: (productId, qty) => {
-    if (qty <= 0) {
-      get().removeFromCart(productId);
-      return;
-    }
-    // Clamp to available stock
-    const item = get().cart.find((i) => i.product.id === productId);
-    const maxQty = item ? item.product.stock : qty;
-    const safeQty = Math.min(qty, maxQty);
+    const { cart, user } = get();
+    const item = cart.find((i) => i.product.id === productId);
+    if (!item) return;
+
+    const safeQty = normalizeCartQuantity(item.product, qty, user?.role);
     if (safeQty <= 0) {
       get().removeFromCart(productId);
       return;
     }
     set({
-      cart: get().cart.map((i) =>
+      cart: cart.map((i) =>
         i.product.id === productId ? { ...i, quantity: safeQty } : i
       ),
     });
     // Persist to Supabase
-    const { user } = get();
     if (user) {
       api.upsertCartItem(user.id, productId, safeQty).catch(console.error);
     }
@@ -670,7 +732,10 @@ export const useStore = create<AppState>((set, get) => ({
       for (const item of items) {
         const product = productMap.get(item.product_id);
         if (product) {
-          cart.push({ product, quantity: item.quantity });
+          const safeQty = normalizeCartQuantity(product, item.quantity, user.role);
+          if (safeQty > 0) {
+            cart.push({ product, quantity: safeQty });
+          }
         }
       }
       set({ cart });
@@ -692,10 +757,35 @@ export const useStore = create<AppState>((set, get) => ({
   // ─── Orders ───
   placeOrder: async (paymentMethod, deliveryFee, deliveryAddress, deliveryLocationUrl, couponCode, couponDiscount, deliverySlot) => {
     const { cart, user, orders } = get();
+    if (!user) {
+      throw new Error('Please sign in to place an order.');
+    }
+    if (cart.length === 0) {
+      throw new Error('Your cart is empty.');
+    }
+    if (!deliveryAddress?.trim()) {
+      throw new Error('Delivery address is required.');
+    }
+
+    for (const item of cart) {
+      const lineError = validateCartLine(item, user.role);
+      if (lineError) {
+        throw new Error(lineError);
+      }
+    }
+
     const subtotal = get().getCartTotal();
     // Apply coupon discount if present, then add delivery fee
     const discountedSubtotal = couponDiscount ? Math.max(0, subtotal - couponDiscount) : subtotal;
     const finalTotal = discountedSubtotal + deliveryFee;
+
+    if (user.role === 'shopowner' && paymentMethod === 'cod') {
+      throw new Error('Cash on Delivery is unavailable for wholesale orders. Please use UPI or card.');
+    }
+    if (paymentMethod === 'cod' && finalTotal > 10000) {
+      throw new Error('Cash on Delivery is available only for orders up to Rs.10,000.');
+    }
+
     const order: Order = {
       id: `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 15).toUpperCase()}`,
       items: [...cart],
@@ -704,29 +794,21 @@ export const useStore = create<AppState>((set, get) => ({
       status: 'placed', // PLACED — no stock change
       date: new Date().toISOString().split('T')[0],
       paymentMethod,
-      userRole: user?.role || 'customer',
-      userName: user?.name || 'Guest',
-      userId: user?.id,
+      userRole: user.role,
+      userName: user.name,
+      userId: user.id,
       deliveryAddress: deliveryAddress || undefined,
       deliveryLocationUrl: deliveryLocationUrl || undefined,
       deliverySlot: deliverySlot || undefined,
       couponCode: couponCode || undefined,
       couponDiscount: couponDiscount || undefined,
     };
-    try {
-      await api.createOrder(order);
-      // Save cart items to kumar_cart table
-      await api.createCartItems(order.id, order.items).catch((err) => {
-        console.error('Failed to save cart items:', err);
-      });
-      set({ orders: [order, ...orders], cart: [] });
-      // Clear cart from Supabase
-      if (user) api.clearCartItems(user.id).catch(console.error);
-    } catch (err) {
-      console.error('Place order error:', err);
-      set({ orders: [order, ...orders], cart: [] });
-      if (user) api.clearCartItems(user.id).catch(console.error);
-    }
+    await api.createOrder(order);
+    await api.createCartItems(order.id, order.items).catch((err) => {
+      console.error('Failed to save cart items:', err);
+    });
+    set({ orders: [order, ...orders], cart: [] });
+    api.clearCartItems(user.id).catch(console.error);
   },
 
   // Accept order → decrease stock (with insufficiency check)
