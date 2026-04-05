@@ -94,7 +94,14 @@ export function Layout() {
   const isCartPage = location.pathname === '/cart';
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 via-white to-gray-50/50">
+    <div className="relative isolate min-h-screen flex flex-col">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,#f8fbf7_0%,#ffffff_40%,#f5faf7_100%)]" />
+        <div className="absolute left-[-12rem] top-[-10rem] h-[28rem] w-[28rem] rounded-full bg-emerald-400/12 blur-[110px]" />
+        <div className="absolute right-[-10rem] top-[6rem] h-[24rem] w-[24rem] rounded-full bg-cyan-400/12 blur-[120px]" />
+        <div className="absolute bottom-[-14rem] left-1/2 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-lime-300/10 blur-[130px]" />
+        <div className="mesh-backdrop absolute inset-0 opacity-40" />
+      </div>
       <Toaster position="top-right" richColors closeButton />
       <Navbar />
       <main className="flex-1 pb-16 md:pb-0">

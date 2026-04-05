@@ -1,252 +1,659 @@
-import { useState, useEffect, useMemo, memo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { ChevronLeft, ChevronRight, TrendingUp, Truck, Shield, Clock, ArrowRight, Zap, Mic, Headphones, Sparkles, BrainCircuit } from 'lucide-react';
+import {
+  ArrowRight,
+  BrainCircuit,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Headphones,
+  Mic,
+  Shield,
+  Sparkles,
+  TrendingUp,
+  Truck,
+  Zap,
+} from 'lucide-react';
 import { motion } from 'motion/react';
 import { useStore } from '../store';
-import { products as allProducts, CATEGORIES, BANNER_IMAGES, FEATURED_PRODUCTS, BEST_SELLERS, PRODUCTS_MAP } from '../data';
+import {
+  products as allProducts,
+  CATEGORIES,
+  BANNER_IMAGES,
+  FEATURED_PRODUCTS,
+  BEST_SELLERS,
+  PRODUCTS_MAP,
+} from '../data';
 import { ProductCard } from './product-card';
+import { TiltCard } from './ui/tilt-card';
 
-// ─── Static data hoisted outside components to avoid re-creation ───
 const HERO_SLIDES = [
-  { img: BANNER_IMAGES[0], title: 'Wholesale Prices,\nRetail Convenience', sub: 'Save up to 40% on bulk orders. Free delivery on Rs.999+', cta: 'Shop Now' },
-  { img: BANNER_IMAGES[1], title: 'Stock Up Your\nStore Today', sub: 'Best prices for retailers. Minimum order quantities available.', cta: 'Explore Wholesale' },
-  { img: BANNER_IMAGES[2], title: 'Fresh Groceries\nAt Your Doorstep', sub: 'Quality products from trusted brands. Same day delivery.', cta: 'Order Now' },
+  {
+    img: BANNER_IMAGES[0],
+    eyebrow: '3D Retail Engine',
+    title: 'Wholesale power.\nImmersive storefront.',
+    sub: 'A sharper retail surface with live deals, voice search, and motion-rich merchandising that feels built, not themed.',
+    cta: 'Explore Catalog',
+    metric: '40%',
+    metricLabel: 'margin advantage',
+    signal: 'AI demand sync',
+    glow: 'rgba(16, 185, 129, 0.38)',
+    highlights: [
+      { label: 'Dispatch', value: '6 hr avg' },
+      { label: 'Conversion', value: '+28%' },
+      { label: 'Smart matches', value: '92%' },
+    ],
+  },
+  {
+    img: BANNER_IMAGES[1],
+    eyebrow: 'Bulk Buying Control',
+    title: 'Stock faster.\nSee demand in layers.',
+    sub: 'Bulk-first pricing, retailer views, and premium product storytelling brought together with cinematic depth and cleaner decision cues.',
+    cta: 'View Bulk Deals',
+    metric: '2.4k',
+    metricLabel: 'orders this week',
+    signal: 'live warehouse feed',
+    glow: 'rgba(59, 130, 246, 0.34)',
+    highlights: [
+      { label: 'Retailers live', value: '500+' },
+      { label: 'Avg reorder', value: '11 days' },
+      { label: 'Fill rate', value: '96%' },
+    ],
+  },
+  {
+    img: BANNER_IMAGES[2],
+    eyebrow: 'Personalized Commerce',
+    title: 'Fresh inventory.\nPrecision recommendations.',
+    sub: 'Customers get a tactile, next-gen shopping experience while shop owners keep pricing, fulfillment, and AI assistance front and center.',
+    cta: 'See Featured Picks',
+    metric: '4.9',
+    metricLabel: 'customer trust score',
+    signal: 'multilingual product assist',
+    glow: 'rgba(245, 158, 11, 0.3)',
+    highlights: [
+      { label: 'Voice search', value: '8 languages' },
+      { label: 'Repeat users', value: '67%' },
+      { label: 'Same-day slots', value: '120+' },
+    ],
+  },
 ];
 
 const STATS = [
-  { icon: Truck, label: 'Free Delivery', sub: 'On orders above Rs.999' },
-  { icon: Shield, label: 'Genuine Products', sub: '100% authentic brands' },
-  { icon: Clock, label: 'Same Day Delivery', sub: 'Order before 2 PM' },
-  { icon: TrendingUp, label: 'Best Prices', sub: 'Wholesale rates available' },
+  { icon: Truck, label: 'Free Delivery', sub: 'On orders above Rs.999', glow: 'rgba(16, 185, 129, 0.14)' },
+  { icon: Shield, label: 'Genuine Products', sub: '100% authentic brands', glow: 'rgba(59, 130, 246, 0.14)' },
+  { icon: Clock, label: 'Same Day Delivery', sub: 'Order before 2 PM', glow: 'rgba(245, 158, 11, 0.16)' },
+  { icon: TrendingUp, label: 'Best Prices', sub: 'Wholesale rates available', glow: 'rgba(20, 184, 166, 0.14)' },
+];
+
+const CATEGORY_THEMES = [
+  { surface: 'from-emerald-50 via-white to-teal-50', icon: 'from-emerald-500 to-teal-400', glow: 'rgba(16, 185, 129, 0.22)' },
+  { surface: 'from-sky-50 via-white to-cyan-50', icon: 'from-sky-500 to-cyan-400', glow: 'rgba(59, 130, 246, 0.18)' },
+  { surface: 'from-amber-50 via-white to-orange-50', icon: 'from-amber-500 to-orange-400', glow: 'rgba(245, 158, 11, 0.2)' },
+  { surface: 'from-fuchsia-50 via-white to-rose-50', icon: 'from-fuchsia-500 to-rose-400', glow: 'rgba(217, 70, 239, 0.18)' },
+];
+
+const AI_FEATURES = [
+  {
+    icon: Mic,
+    title: 'Voice Search',
+    desc: 'Search products naturally with a voice-first layer that feels instant and contextual.',
+    gradient: 'from-violet-500 to-fuchsia-500',
+    glow: 'rgba(139, 92, 246, 0.26)',
+    link: '/products',
+    linkLabel: 'Try voice search',
+  },
+  {
+    icon: Headphones,
+    title: 'Multilingual Audio',
+    desc: 'Localized audio descriptions help shoppers browse faster across languages and categories.',
+    gradient: 'from-sky-500 to-cyan-500',
+    glow: 'rgba(14, 165, 233, 0.24)',
+    link: '/products',
+    linkLabel: 'Explore products',
+  },
+  {
+    icon: Sparkles,
+    title: 'Smart Picks',
+    desc: 'Personalized recommendations surface faster with behavior-aware ranking and premium merchandising.',
+    gradient: 'from-amber-500 to-orange-500',
+    glow: 'rgba(245, 158, 11, 0.24)',
+    link: '/products',
+    linkLabel: 'View picks',
+  },
 ];
 
 const TOP_BRANDS = ['Surf Excel', 'Tata Tea', 'Colgate', 'Dove', 'Nescafe', 'Maggi', 'Parle', 'Dabur', 'Himalaya'];
 
 const HeroBanner = memo(function HeroBanner() {
   const [current, setCurrent] = useState(0);
+  const activeSlide = HERO_SLIDES[current];
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrent((p) => (p + 1) % HERO_SLIDES.length), 5000);
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 5000);
+
     return () => clearInterval(timer);
   }, []);
 
   return (
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        className="relative overflow-hidden rounded-2xl sm:rounded-3xl h-[280px] sm:h-[440px] lg:h-[520px] shadow-2xl ring-1 ring-black/5"
-      >
-        {/* Floating gradient orbs for depth */}
-        <div className="orb orb-primary w-64 h-64 -top-20 -left-20 animate-float-slow" />
-        <div className="orb orb-emerald w-48 h-48 bottom-10 right-10 animate-float-slow" style={{ animationDelay: '2s' }} />
-        {HERO_SLIDES.map((s, i) => (
-          <div
-            key={i}
-            className={`absolute inset-0 transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}
-          >
-            <img src={s.img} alt="" className="w-full h-full object-cover" loading={i === 0 ? 'eager' : 'lazy'} />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-            <div className="absolute inset-0 flex items-center">
-              <div className="px-6 sm:px-12 max-w-xl">
-                <motion.h1
-                  key={`title-${i}-${current}`}
-                  initial={{ x: -30, opacity: 0 }}
-                  animate={i === current ? { x: 0, opacity: 1 } : {}}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="text-white whitespace-pre-line text-[24px] xs:text-[28px] sm:text-[40px] lg:text-[52px] drop-shadow-lg"
-                  style={{ fontWeight: 800, lineHeight: 1.05, letterSpacing: '-0.025em' }}
-                >
-                  {s.title}
-                </motion.h1>
-                <motion.p
-                  key={`sub-${i}-${current}`}
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={i === current ? { x: 0, opacity: 1 } : {}}
-                  transition={{ duration: 0.6, delay: 0.4 }}
-                  className="text-white/85 mt-3 sm:mt-4 text-[13px] sm:text-[17px] max-w-md leading-relaxed line-clamp-2 sm:line-clamp-none"
-                >
-                  {s.sub}
-                </motion.p>
-                <motion.div
-                  key={`cta-${i}-${current}`}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={i === current ? { y: 0, opacity: 1 } : {}}
-                  transition={{ duration: 0.6, delay: 0.6 }}
-                >
-                  <Link to="/products" className="inline-flex items-center gap-2 mt-4 sm:mt-6 px-5 sm:px-7 py-2.5 sm:py-3.5 bg-white text-gray-900 rounded-full hover:bg-white/90 shadow-lg hover:shadow-xl transition-all text-[14px] sm:text-[15px] group" style={{ fontWeight: 700 }}>
-                    {s.cta} <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
-                </motion.div>
-              </div>
+    <section className="relative overflow-hidden rounded-[32px] border border-slate-900/10 bg-slate-950 shadow-[0_45px_140px_-60px_rgba(15,23,42,0.8)] sm:rounded-[40px]">
+      {HERO_SLIDES.map((slide, index) => (
+        <div
+          key={slide.title}
+          className={`absolute inset-0 transition-opacity duration-700 ${index === current ? 'opacity-100' : 'opacity-0'}`}
+        >
+          <img src={slide.img} alt="" className="h-full w-full object-cover opacity-20" loading={index === 0 ? 'eager' : 'lazy'} />
+          <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(2,6,23,0.96)_0%,rgba(2,6,23,0.9)_38%,rgba(2,6,23,0.68)_70%,rgba(2,6,23,0.92)_100%)]" />
+          <div className="absolute inset-0" style={{ background: `radial-gradient(circle at 18% 18%, ${slide.glow} 0%, transparent 34%)` }} />
+        </div>
+      ))}
+
+      <div className="mesh-backdrop absolute inset-0 opacity-20" />
+      <div className="absolute -left-20 top-8 h-64 w-64 rounded-full bg-emerald-400/12 blur-[110px]" />
+      <div className="absolute right-0 top-12 h-72 w-72 rounded-full bg-cyan-400/10 blur-[120px]" />
+      <div className="absolute bottom-[-9rem] left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-300/12 blur-[130px]" />
+
+      <div className="relative grid gap-10 px-5 py-7 sm:px-8 sm:py-10 lg:grid-cols-[1.02fr_0.98fr] lg:px-10 lg:py-12">
+        <motion.div
+          key={`copy-${current}`}
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="flex flex-col justify-between"
+        >
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-white/70 backdrop-blur-xl">
+              <Sparkles className="h-3.5 w-3.5 text-emerald-300" />
+              {activeSlide.eyebrow}
+            </div>
+
+            <h1 className="font-display mt-5 whitespace-pre-line text-[2.5rem] leading-[0.94] tracking-[-0.05em] text-white sm:text-[3.2rem] lg:text-[4.6rem]">
+              {activeSlide.title}
+            </h1>
+
+            <p className="mt-5 max-w-xl text-[15px] leading-7 text-white/68 sm:text-[16px]">
+              {activeSlide.sub}
+            </p>
+
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <Link
+                to="/products"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-[14px] font-black uppercase tracking-[0.16em] text-slate-900 transition-all duration-300 hover:translate-y-[-2px] hover:bg-emerald-50"
+              >
+                {activeSlide.cta}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/register?role=shopowner"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/6 px-6 py-3.5 text-[14px] font-bold uppercase tracking-[0.16em] text-white/82 backdrop-blur-xl transition-all duration-300 hover:border-white/25 hover:bg-white/10"
+              >
+                Become a Partner
+              </Link>
             </div>
           </div>
-        ))}
 
-        <button onClick={() => setCurrent((p) => (p - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)} className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/25 transition-all hover:scale-110 border border-white/20 hidden sm:block">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <button onClick={() => setCurrent((p) => (p + 1) % HERO_SLIDES.length)} className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-white/25 transition-all hover:scale-110 border border-white/20 hidden sm:block">
-          <ChevronRight className="w-5 h-5" />
-        </button>
+          <div className="mt-8 grid gap-3 sm:grid-cols-3">
+            {activeSlide.highlights.map((item, index) => (
+              <TiltCard
+                key={item.label}
+                className="rounded-[26px] border border-white/12 bg-white/8 backdrop-blur-xl"
+                contentClassName="h-full p-4"
+                maxTilt={10}
+              >
+                <div className="depth-layer depth-16">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">{item.label}</p>
+                  <p className="font-display mt-2 text-[24px] tracking-[-0.04em] text-white sm:text-[28px]">
+                    {item.value}
+                  </p>
+                  <div
+                    className="mt-4 h-1.5 rounded-full"
+                    style={{
+                      width: `${72 + index * 8}%`,
+                      background: 'linear-gradient(90deg, rgba(255,255,255,0.95), rgba(255,255,255,0.2))',
+                    }}
+                  />
+                </div>
+              </TiltCard>
+            ))}
+          </div>
+        </motion.div>
 
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2">
-          {HERO_SLIDES.map((_, i) => (
-            <button key={i} onClick={() => setCurrent(i)} className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${i === current ? 'bg-white w-8 sm:w-10' : 'bg-white/40 w-1 sm:w-1.5 hover:bg-white/60'}`} />
+        <div className="depth-stage relative h-[360px] sm:h-[470px] lg:h-[540px]">
+          <motion.div
+            key={`stage-${current}`}
+            initial={{ opacity: 0, x: 24, rotateY: -8 }}
+            animate={{ opacity: 1, x: 0, rotateY: 0 }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+            className="absolute inset-0"
+          >
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 5.6, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute left-0 top-10 z-30 hidden w-44 sm:block"
+            >
+              <TiltCard
+                className="floating-card rounded-[28px] border border-white/12 bg-white/12 text-white backdrop-blur-xl"
+                contentClassName="p-4"
+                maxTilt={14}
+              >
+                <div className="depth-layer depth-24">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">{activeSlide.signal}</p>
+                  <p className="font-display mt-2 text-[26px] tracking-[-0.05em] text-white">{activeSlide.metric}</p>
+                  <p className="mt-2 text-[13px] text-white/62">{activeSlide.metricLabel}</p>
+                </div>
+              </TiltCard>
+            </motion.div>
+
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 6.4, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
+              className="absolute bottom-9 right-0 z-30 hidden w-48 sm:block"
+            >
+              <TiltCard
+                className="floating-card rounded-[28px] border border-white/12 bg-slate-950/80 text-white backdrop-blur-xl"
+                contentClassName="p-4"
+                maxTilt={14}
+              >
+                <div className="depth-layer depth-24">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">Conversion boost</p>
+                    <TrendingUp className="h-4 w-4 text-emerald-300" />
+                  </div>
+                  <div className="mt-3 h-24 rounded-[20px] bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.02)_100%)] p-4">
+                    <div className="flex h-full items-end gap-2">
+                      {[46, 68, 54, 86, 94].map((value) => (
+                        <div
+                          key={value}
+                          className="flex-1 rounded-t-full bg-gradient-to-t from-emerald-400 to-cyan-300"
+                          style={{ height: `${value}%` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </TiltCard>
+            </motion.div>
+
+            <TiltCard
+              className="floating-card absolute inset-x-4 bottom-6 top-6 rounded-[34px] border border-white/16 bg-white/10 text-white backdrop-blur-2xl sm:inset-x-8"
+              contentClassName="h-full p-5 sm:p-6"
+              maxTilt={12}
+            >
+              <div className="absolute inset-0 rounded-[inherit] bg-[linear-gradient(180deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0.02)_100%)]" />
+              <div className="absolute inset-0 rounded-[inherit] opacity-70" style={{ background: `radial-gradient(circle at 72% 26%, ${activeSlide.glow} 0%, transparent 34%)` }} />
+              <div className="mesh-backdrop-dark absolute inset-0 rounded-[inherit] opacity-45" />
+
+              <div className="relative flex h-full flex-col">
+                <div className="depth-layer depth-16 flex items-center justify-between rounded-full border border-white/12 bg-white/6 px-4 py-3">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">Experience layer</p>
+                    <p className="mt-1 text-[15px] font-semibold text-white/84">Product storytelling in motion</p>
+                  </div>
+                  <div className="rounded-full border border-white/12 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-200">
+                    {activeSlide.signal}
+                  </div>
+                </div>
+
+                <div className="mt-5 grid flex-1 gap-4 sm:grid-cols-[0.94fr_1.06fr] sm:gap-5">
+                  <div className="flex min-h-[220px] flex-col gap-4">
+                    <div className="depth-layer depth-24 rounded-[28px] border border-white/12 bg-slate-950/46 p-5 shadow-[0_24px_80px_-36px_rgba(0,0,0,0.8)]">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">Retail intelligence</p>
+                      <p className="font-display mt-3 text-[2.5rem] leading-none tracking-[-0.06em] text-white">{activeSlide.metric}</p>
+                      <p className="mt-2 max-w-[16rem] text-[13px] leading-6 text-white/62">{activeSlide.metricLabel}</p>
+                    </div>
+
+                    <div className="depth-layer depth-16 rounded-[28px] border border-white/12 bg-white/10 p-5">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">Motion stack</p>
+                      <div className="mt-4 space-y-3">
+                        {activeSlide.highlights.map((item) => (
+                          <div key={item.label} className="flex items-center justify-between text-[13px] text-white/72">
+                            <span>{item.label}</span>
+                            <span className="font-bold text-white">{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="depth-stage relative min-h-[260px]">
+                    <div className="pulse-plane absolute inset-4 rounded-[32px] border border-white/10 bg-white/8 blur-[1px]" />
+                    <div className="depth-layer depth-40 absolute inset-0 rounded-[30px] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.16)_0%,rgba(255,255,255,0.04)_100%)] p-3">
+                      <div className="relative h-full overflow-hidden rounded-[24px] shadow-[0_40px_90px_-38px_rgba(0,0,0,0.8)]">
+                        <img
+                          src={activeSlide.img}
+                          alt={activeSlide.title.replace('\n', ' ')}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.12)_0%,rgba(15,23,42,0.05)_35%,rgba(15,23,42,0.86)_100%)]" />
+
+                        <div className="absolute inset-x-3 top-3 flex items-center justify-between">
+                          <div className="rounded-full border border-white/18 bg-slate-950/55 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80 backdrop-blur-xl">
+                            Live pricing
+                          </div>
+                          <div className="rounded-full border border-white/18 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/72 backdrop-blur-xl">
+                            3D preview
+                          </div>
+                        </div>
+
+                        <div className="absolute inset-x-3 bottom-3">
+                          <div className="depth-layer depth-24 rounded-[24px] border border-white/14 bg-white/92 p-4 text-slate-900 shadow-2xl shadow-slate-950/25">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Current highlight</p>
+                                <p className="font-display mt-2 text-[22px] leading-tight tracking-[-0.05em]">
+                                  {activeSlide.highlights[1].value}
+                                </p>
+                              </div>
+                              <div className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                                Growth signal
+                              </div>
+                            </div>
+                            <div className="mt-4 grid grid-cols-2 gap-3 text-[12px] text-slate-500">
+                              <div className="rounded-[18px] bg-slate-100 px-3 py-2">{activeSlide.highlights[0].label}</div>
+                              <div className="rounded-[18px] bg-slate-100 px-3 py-2">{activeSlide.highlights[2].label}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TiltCard>
+          </motion.div>
+        </div>
+      </div>
+
+      <div className="absolute inset-x-4 bottom-4 z-20 flex items-center justify-between sm:inset-x-8 sm:bottom-6">
+        <div className="flex items-center gap-2">
+          {HERO_SLIDES.map((slide, index) => (
+            <button
+              key={slide.title}
+              onClick={() => setCurrent(index)}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                index === current ? 'w-12 bg-white' : 'w-2 bg-white/35 hover:bg-white/55'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
           ))}
         </div>
-      </motion.div>
+
+        <div className="hidden gap-2 sm:flex">
+          <button
+            onClick={() => setCurrent((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/8 text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/14"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => setCurrent((prev) => (prev + 1) % HERO_SLIDES.length)}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/8 text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/14"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    </section>
   );
 });
 
 const StatsBanner = memo(function StatsBanner() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mt-8 sm:mt-12">
-      {STATS.map((s, i) => (
-        <motion.div 
-          key={i} 
-          initial={{ opacity: 0, y: 20 }}
+    <div className="grid grid-cols-2 gap-3 sm:mt-12 sm:grid-cols-4 sm:gap-5">
+      {STATS.map((item, index) => (
+        <motion.div
+          key={item.label}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.1 }}
+          transition={{ delay: index * 0.08, duration: 0.45 }}
           viewport={{ once: true }}
-          className="bg-white p-4 sm:p-6 rounded-2xl border border-border/60 hover:border-primary/20 transition-all shadow-premium hover:shadow-premium-lg group"
         >
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-            <s.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-          </div>
-          <h3 className="text-[14px] sm:text-[16px]" style={{ fontWeight: 700 }}>{s.label}</h3>
-          <p className="text-[11px] sm:text-[13px] text-muted-foreground mt-1">{s.sub}</p>
+          <TiltCard
+            className="group rounded-[28px] border border-white/70 bg-white/86 shadow-premium backdrop-blur-xl"
+            contentClassName="h-full p-4 sm:p-5"
+            maxTilt={10}
+          >
+            <div className="absolute inset-0 rounded-[inherit]" style={{ background: `radial-gradient(circle at 18% 22%, ${item.glow} 0%, transparent 48%)` }} />
+            <div className="depth-layer depth-16">
+              <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-slate-900 text-white shadow-[0_24px_50px_-24px_rgba(15,23,42,0.8)]">
+                <item.icon className="h-5 w-5" />
+              </div>
+              <h3 className="mt-4 text-[15px] font-black tracking-[-0.03em] text-slate-900 sm:text-[17px]">{item.label}</h3>
+              <p className="mt-1 text-[12px] leading-5 text-slate-500 sm:text-[13px]">{item.sub}</p>
+            </div>
+          </TiltCard>
         </motion.div>
       ))}
     </div>
   );
 });
 
+function SectionHeading({
+  eyebrow,
+  title,
+  subtitle,
+  linkLabel,
+  linkTo = '/products',
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  linkLabel?: string;
+  linkTo?: string;
+}) {
+  return (
+    <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary">{eyebrow}</p>
+        <h2 className="font-display mt-3 text-[2rem] tracking-[-0.06em] text-slate-900 sm:text-[2.4rem]">{title}</h2>
+        <p className="mt-2 max-w-2xl text-[14px] text-slate-500 sm:text-[15px]">{subtitle}</p>
+      </div>
+      {linkLabel ? (
+        <Link
+          to={linkTo}
+          className="inline-flex items-center gap-2 rounded-full border border-slate-900/8 bg-white/70 px-4 py-2 text-[12px] font-black uppercase tracking-[0.18em] text-slate-800 shadow-premium backdrop-blur-xl transition-all duration-300 hover:translate-y-[-2px]"
+        >
+          {linkLabel}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
 function CategorySection() {
   return (
     <section>
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-1 h-6 sm:h-7 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
-          <h2 className="text-[18px] sm:text-[22px]" style={{ fontWeight: 700 }}>Shop by Category</h2>
-        </div>
-        <Link to="/products" className="text-primary text-[12px] sm:text-[13px] flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-primary/5 hover:bg-primary/10 rounded-full transition-colors" style={{ fontWeight: 600 }}>
-          View All <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-        </Link>
-      </div>
-      <div className="grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-3">
-        {CATEGORIES.map((cat, i) => (
-          <motion.div
-            key={cat.slug}
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.05 }}
-            viewport={{ once: true }}
-          >
-            <Link
-              to={`/products?category=${cat.slug}`}
-              className="flex flex-col items-center gap-2 p-3 sm:p-4 bg-white rounded-2xl border border-border/80 hover:border-primary/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group shine-hover shadow-premium"
+      <SectionHeading
+        eyebrow="Navigation"
+        title="Shop by Category"
+        subtitle="Every category gets a tactile card treatment with depth, gradient light, and cleaner hierarchy."
+        linkLabel="View all"
+      />
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+        {CATEGORIES.map((category, index) => {
+          const theme = CATEGORY_THEMES[index % CATEGORY_THEMES.length];
+
+          return (
+            <motion.div
+              key={category.slug}
+              initial={{ opacity: 0, y: 20, scale: 0.96 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: index * 0.04, duration: 0.42 }}
+              viewport={{ once: true }}
             >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-primary/5 to-emerald-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                <span className="text-[24px] sm:text-[28px]">{cat.icon}</span>
-              </div>
-              <span className="text-[11px] sm:text-[12px] text-center text-muted-foreground group-hover:text-foreground transition-colors truncate w-full px-1" style={{ fontWeight: 600 }}>{cat.name}</span>
-            </Link>
-          </motion.div>
-        ))}
+              <TiltCard
+                className="group h-full rounded-[28px] border border-white/70 bg-white/86 shadow-premium"
+                contentClassName="h-full"
+                maxTilt={14}
+              >
+                <div className={`absolute inset-0 rounded-[inherit] bg-gradient-to-br ${theme.surface}`} />
+                <div className="absolute inset-0 rounded-[inherit]" style={{ background: `radial-gradient(circle at 22% 22%, ${theme.glow} 0%, transparent 58%)` }} />
+
+                <Link to={`/products?category=${category.slug}`} className="flex h-full flex-col items-start p-4 sm:p-5">
+                  <div className="depth-layer depth-24">
+                    <div className={`flex h-14 w-14 items-center justify-center rounded-[20px] bg-gradient-to-br ${theme.icon} text-[30px] text-white shadow-[0_22px_50px_-22px_rgba(15,23,42,0.55)]`}>
+                      {category.icon}
+                    </div>
+                  </div>
+
+                  <div className="depth-layer depth-16 mt-5">
+                    <p className="text-[14px] font-black leading-5 tracking-[-0.03em] text-slate-900">{category.name}</p>
+                    <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Explore collection</p>
+                  </div>
+                </Link>
+              </TiltCard>
+            </motion.div>
+          );
+        })}
       </div>
     </section>
   );
 }
 
-const AI_FEATURES = [
-  {
-    icon: Mic,
-    title: 'Voice Search',
-    desc: 'Search products by speaking — just tap the mic and say what you need.',
-    gradient: 'from-violet-500 to-purple-600',
-    glow: 'shadow-violet-500/20',
-    link: '/products',
-    linkLabel: 'Try Voice Search',
-  },
-  {
-    icon: Headphones,
-    title: 'Multilingual Audio',
-    desc: 'Listen to product descriptions in Hindi, Telugu, Tamil and more — powered by Sarvam AI.',
-    gradient: 'from-blue-500 to-cyan-500',
-    glow: 'shadow-blue-500/20',
-    link: '/products',
-    linkLabel: 'Explore Products',
-  },
-  {
-    icon: Sparkles,
-    title: 'Smart Picks',
-    desc: 'AI-curated product recommendations based on your browsing & purchase history.',
-    gradient: 'from-amber-500 to-orange-500',
-    glow: 'shadow-amber-500/20',
-    link: '/products',
-    linkLabel: 'View Picks',
-  },
-];
+function BrandSection() {
+  return (
+    <section className="rounded-[32px] border border-white/70 bg-white/76 p-5 shadow-premium backdrop-blur-xl sm:rounded-[40px] sm:p-7">
+      <div className="grid gap-5 lg:grid-cols-[0.82fr_1.18fr]">
+        <TiltCard
+          className="rounded-[32px] border border-slate-900/10 bg-slate-950 text-white shadow-[0_35px_100px_-46px_rgba(15,23,42,0.9)]"
+          contentClassName="h-full p-6 sm:p-7"
+          maxTilt={10}
+        >
+          <div className="absolute inset-0 rounded-[inherit] bg-[radial-gradient(circle_at_20%_18%,rgba(16,185,129,0.2),transparent_35%)]" />
+          <div className="mesh-backdrop-dark absolute inset-0 rounded-[inherit] opacity-45" />
+          <div className="relative z-10">
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-300">Brand network</p>
+            <h2 className="font-display mt-3 text-[2rem] tracking-[-0.06em] text-white sm:text-[2.5rem]">Trusted by fast-moving local brands.</h2>
+            <p className="mt-3 max-w-md text-[14px] leading-7 text-white/62">
+              The storefront now feels like a premium marketplace, but the business signal still stays obvious and measurable.
+            </p>
+
+            <div className="mt-7 grid grid-cols-3 gap-3">
+              {[
+                { label: 'Brands', value: '500+' },
+                { label: 'Cities', value: '48' },
+                { label: 'Fill rate', value: '96%' },
+              ].map((item) => (
+                <div key={item.label} className="rounded-[24px] border border-white/10 bg-white/8 p-4 backdrop-blur-xl">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">{item.label}</p>
+                  <p className="font-display mt-2 text-[24px] tracking-[-0.05em] text-white">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </TiltCard>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {TOP_BRANDS.map((brand, index) => (
+            <motion.div
+              key={brand}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.04, duration: 0.35 }}
+              viewport={{ once: true }}
+            >
+              <TiltCard
+                className="group rounded-[26px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(248,250,252,0.85)_100%)] shadow-premium"
+                contentClassName="h-full p-4"
+                maxTilt={12}
+              >
+                <div className="depth-layer depth-16 flex h-full min-h-[118px] flex-col justify-between rounded-[22px] border border-slate-100 bg-white/80 p-4">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">Featured brand</span>
+                  <p className="font-display text-[1.2rem] leading-5 tracking-[-0.05em] text-slate-900">{brand}</p>
+                  <span className="text-[11px] font-bold text-slate-400">Verified supply partner</span>
+                </div>
+              </TiltCard>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function AiSection() {
   return (
-    <section className="relative rounded-2xl sm:rounded-3xl overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(139,92,246,0.15),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,rgba(59,130,246,0.12),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDYwIEwgNjAgMCIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IGZpbGw9InVybCgjZykiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiLz48L3N2Zz4=')] opacity-50" />
+    <section className="relative overflow-hidden rounded-[34px] border border-slate-900/10 bg-slate-950 text-white shadow-[0_40px_120px_-55px_rgba(15,23,42,0.9)] sm:rounded-[40px]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_18%,rgba(139,92,246,0.22),transparent_32%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_88%_74%,rgba(14,165,233,0.18),transparent_28%)]" />
+      <div className="mesh-backdrop-dark absolute inset-0 opacity-45" />
 
-      <div className="relative p-6 sm:p-10">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="flex items-center gap-3 mb-8"
+      <div className="relative grid gap-5 p-5 sm:p-8 lg:grid-cols-[0.84fr_1.16fr]">
+        <TiltCard
+          className="floating-card rounded-[30px] border border-white/12 bg-white/8 backdrop-blur-xl"
+          contentClassName="h-full p-6"
+          maxTilt={10}
         >
-          <div className="p-2.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg shadow-violet-500/25">
-            <BrainCircuit className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-white text-[22px]" style={{ fontWeight: 700 }}>AI-Powered Shopping</h2>
-            <p className="text-white/50 text-[13px]">Smarter, faster, and more personal</p>
-          </div>
-        </motion.div>
-
-        {/* Feature Cards */}
-        <div className="grid sm:grid-cols-3 gap-4">
-          {AI_FEATURES.map((feat, i) => (
-            <motion.div
-              key={feat.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.12, duration: 0.5 }}
-              viewport={{ once: true }}
-              className={`group relative bg-white/[0.06] backdrop-blur-md border border-white/10 rounded-2xl p-5 hover:bg-white/[0.1] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${feat.glow}`}
-            >
-              {/* Icon */}
-              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${feat.gradient} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                <feat.icon className="w-5 h-5 text-white" />
+          <div className="depth-layer depth-16">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-[0_20px_50px_-18px_rgba(168,85,247,0.7)]">
+                <BrainCircuit className="h-5 w-5 text-white" />
               </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-violet-200">AI system</p>
+                <h2 className="font-display mt-2 text-[2rem] tracking-[-0.06em] text-white">A storefront with a thinking layer.</h2>
+              </div>
+            </div>
 
-              {/* Content */}
-              <h3 className="text-white text-[16px] mb-1.5" style={{ fontWeight: 600 }}>{feat.title}</h3>
-              <p className="text-white/55 text-[13px] leading-relaxed mb-4">{feat.desc}</p>
+            <p className="mt-5 max-w-md text-[14px] leading-7 text-white/62">
+              Voice discovery, multilingual descriptions, and behavior-aware recommendations now sit inside a surface that feels dimensional and alive.
+            </p>
 
-              {/* Link */}
-              <Link
-                to={feat.link}
-                className="inline-flex items-center gap-1.5 text-[12px] text-white/70 hover:text-white transition-colors group/link"
-                style={{ fontWeight: 600 }}
+            <div className="mt-7 grid grid-cols-2 gap-3">
+              {[
+                { label: 'Voice intents', value: 'Real-time' },
+                { label: 'Languages', value: '8+' },
+                { label: 'Smart picks', value: 'Behavior-aware' },
+                { label: 'Assist layer', value: 'Contextual' },
+              ].map((item) => (
+                <div key={item.label} className="rounded-[22px] border border-white/10 bg-slate-950/40 p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">{item.label}</p>
+                  <p className="mt-2 text-[14px] font-semibold text-white/86">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </TiltCard>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          {AI_FEATURES.map((feature, index) => (
+            <motion.div
+              key={feature.title}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1, duration: 0.45 }}
+              viewport={{ once: true }}
+            >
+              <TiltCard
+                className="group h-full rounded-[28px] border border-white/10 bg-white/8 backdrop-blur-xl"
+                contentClassName="h-full p-5"
+                maxTilt={14}
               >
-                {feat.linkLabel}
-                <ArrowRight className="w-3 h-3 group-hover/link:translate-x-0.5 transition-transform" />
-              </Link>
+                <div className="absolute inset-0 rounded-[inherit]" style={{ background: `radial-gradient(circle at 20% 20%, ${feature.glow} 0%, transparent 55%)` }} />
+                <div className="depth-layer depth-24">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-[18px] bg-gradient-to-br ${feature.gradient} shadow-[0_22px_52px_-20px_rgba(15,23,42,0.65)]`}>
+                    <feature.icon className="h-5 w-5 text-white" />
+                  </div>
+                </div>
 
-              {/* Decorative glow */}
-              <div className={`absolute -top-10 -right-10 w-24 h-24 bg-gradient-to-br ${feat.gradient} rounded-full opacity-0 group-hover:opacity-10 blur-2xl transition-opacity duration-500`} />
+                <div className="depth-layer depth-16 mt-5 flex h-[calc(100%-4.25rem)] flex-col">
+                  <h3 className="text-[18px] font-black tracking-[-0.04em] text-white">{feature.title}</h3>
+                  <p className="mt-3 flex-1 text-[13px] leading-6 text-white/58">{feature.desc}</p>
+                  <Link
+                    to={feature.link}
+                    className="mt-5 inline-flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.18em] text-white/72 transition-colors hover:text-white"
+                  >
+                    {feature.linkLabel}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </TiltCard>
             </motion.div>
           ))}
         </div>
@@ -256,158 +663,226 @@ function AiSection() {
 }
 
 export function HomePage() {
-  const userRole = useStore((s) => s.user?.role);
-  const recentlyViewed = useStore((s) => s.recentlyViewed);
+  const userRole = useStore((state) => state.user?.role);
+  const recentlyViewed = useStore((state) => state.recentlyViewed);
   const isShop = userRole === 'shopowner';
 
-  // Only recompute when recentlyViewed changes
   const recentProducts = useMemo(
     () => recentlyViewed.map((id) => PRODUCTS_MAP.get(id)).filter(Boolean) as typeof allProducts,
     [recentlyViewed]
   );
 
   return (
-    <div className="space-y-12 sm:space-y-20 pb-16">
-      <section>
+    <div className="space-y-14 pb-16 pt-4 sm:space-y-20 sm:pt-6">
+      <section className="space-y-8">
         <HeroBanner />
         <StatsBanner />
       </section>
 
       <CategorySection />
 
-      {/* AI Smart Deals */}
       <section>
-        <div className="flex items-center justify-between mb-8 px-2">
-          <div className="flex items-center gap-3">
-            <div className="w-1.5 h-8 bg-gradient-to-b from-purple-500 to-primary rounded-full" />
-            <div>
-              <h2 className="text-[24px] sm:text-[28px] tracking-tight" style={{ fontWeight: 800 }}>
-                Smart Deals for You
-              </h2>
-              <p className="text-muted-foreground text-[14px]">AI-curated based on your interests</p>
-            </div>
-          </div>
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-600 rounded-full border border-purple-100 animate-pulse">
-            <Sparkles className="w-3 h-3" />
-            <span className="text-[11px] font-bold uppercase tracking-wider">AI Powered</span>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
-          {BEST_SELLERS.map((p) => (
-            <ProductCard key={p.id} product={p} />
+        <SectionHeading
+          eyebrow="AI curated"
+          title="Smart Deals for You"
+          subtitle="Best sellers now sit inside a cleaner, deeper product grid so the storefront looks premium before the shopper even clicks."
+          linkLabel="See all deals"
+        />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4 xl:grid-cols-5">
+          {BEST_SELLERS.map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </section>
 
-      {/* Featured Products */}
       <section>
-        <div className="flex items-center justify-between mb-8 px-2">
-          <div className="flex items-center gap-3">
-            <div className="w-1.5 h-8 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
-            <div>
-              <h2 className="text-[24px] sm:text-[28px] tracking-tight" style={{ fontWeight: 800 }}>
-                Featured Collections
-              </h2>
-              <p className="text-muted-foreground text-[14px]">Handpicked premium quality items</p>
-            </div>
-          </div>
-          <Link to="/products" className="text-primary font-bold text-[14px] hover:underline flex items-center gap-1 group">
-            View All <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
-          {FEATURED_PRODUCTS.slice(0, 10).map((p) => (
-            <ProductCard key={p.id} product={p} />
+        <SectionHeading
+          eyebrow="Merchandising"
+          title="Featured Collections"
+          subtitle="High-value products get the same motion-rich treatment, with layered cards and stronger focus on price, imagery, and action."
+          linkLabel="Browse catalog"
+        />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4 xl:grid-cols-5">
+          {FEATURED_PRODUCTS.slice(0, 10).map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </section>
 
-      {/* Top Brands Grid */}
-      <section className="bg-slate-50 -mx-4 px-4 py-16 sm:py-24 border-y border-slate-100">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-[24px] sm:text-[32px]" style={{ fontWeight: 800 }}>Trusted by 500+ Local Brands</h2>
-            <p className="text-muted-foreground mt-2">We bring you the best from names you know and trust</p>
-          </div>
-          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-4 sm:gap-8 opacity-60">
-            {TOP_BRANDS.map(brand => (
-              <div key={brand} className="flex items-center justify-center p-4 bg-white rounded-2xl border border-slate-100 grayscale hover:grayscale-0 transition-all hover:scale-110 cursor-default">
-                <span className="text-[12px] font-black text-slate-400 text-center uppercase tracking-tighter">{brand}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <BrandSection />
 
-      {/* All Products */}
       <section>
-        <div className="flex items-center gap-3 mb-8 px-2">
-          <div className="w-1.5 h-8 bg-gradient-to-b from-slate-400 to-slate-600 rounded-full" />
-          <h2 className="text-[24px] sm:text-[28px] tracking-tight" style={{ fontWeight: 800 }}>Explore Our Catalog</h2>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
-          {allProducts.slice(0, 10).map((p) => (
-            <ProductCard key={p.id} product={p} />
+        <SectionHeading
+          eyebrow="Catalog"
+          title="Explore Our Catalog"
+          subtitle="A broader shelf view with stronger visual rhythm and consistent 3D product cards across the browsing flow."
+          linkLabel="Explore 1000+"
+        />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4 xl:grid-cols-5">
+          {allProducts.slice(0, 10).map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
-        <div className="mt-12 text-center">
-          <Link 
-            to="/products" 
-            className="inline-flex items-center gap-2 px-10 py-4 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 active:scale-95 font-bold"
-          >
-            Explore 1000+ Products <ArrowRight className="w-5 h-5" />
-          </Link>
-        </div>
       </section>
 
-      {/* Wholesale Deals - Only for shop owners */}
       {isShop && (
-        <section className="bg-gradient-to-r from-primary/5 via-emerald-50/80 to-teal-50/50 rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-primary/10">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="p-2 bg-gradient-to-br from-primary to-emerald-500 rounded-xl shadow-md shadow-primary/20">
-              <Zap className="w-5 h-5 text-white" />
+        <section className="relative overflow-hidden rounded-[32px] border border-primary/12 bg-[linear-gradient(135deg,rgba(255,255,255,0.95)_0%,rgba(240,253,244,0.92)_48%,rgba(236,253,245,0.98)_100%)] p-5 shadow-premium sm:rounded-[38px] sm:p-7">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(16,185,129,0.18),transparent_35%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_88%_78%,rgba(14,165,233,0.12),transparent_28%)]" />
+
+          <div className="relative">
+            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-white shadow-[0_24px_60px_-26px_rgba(16,185,129,0.8)]">
+                  <Zap className="h-3.5 w-3.5" />
+                  Shop owner exclusive
+                </div>
+                <h2 className="font-display mt-4 text-[2rem] tracking-[-0.06em] text-slate-900 sm:text-[2.4rem]">Wholesale Deals with a premium control surface.</h2>
+                <p className="mt-3 max-w-2xl text-[14px] text-slate-500">
+                  Pricing, inventory, and quick ordering are now staged like a high-end business dashboard instead of a flat list.
+                </p>
+              </div>
             </div>
-            <h2 className="text-[22px]" style={{ fontWeight: 700 }}>Wholesale Deals</h2>
-            <span className="bg-gradient-to-r from-primary to-emerald-500 text-white text-[11px] px-3 py-1 rounded-full shadow-sm" style={{ fontWeight: 600 }}>Shop Owner Exclusive</span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
-            {allProducts.slice(0, 5).map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+              {allProducts.slice(0, 5).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           </div>
         </section>
       )}
 
-      {/* AI-Powered Section */}
       <AiSection />
 
-      {/* Recently Viewed */}
       {recentProducts.length > 0 && (
         <section>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-1 h-7 bg-gradient-to-b from-primary to-emerald-500 rounded-full" />
-            <h2 className="text-[22px]" style={{ fontWeight: 700 }}>Recently Viewed</h2>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
-            {recentProducts.slice(0, 5).map((p) => (
-              <ProductCard key={p.id} product={p} />
+          <SectionHeading
+            eyebrow="History"
+            title="Recently Viewed"
+            subtitle="Shoppers can jump back into products through the same upgraded visual language without losing context."
+          />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 lg:grid-cols-5">
+            {recentProducts.slice(0, 5).map((product) => (
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         </section>
       )}
 
-      {/* CTA */}
-      <section className="relative bg-gradient-to-br from-primary via-emerald-600 to-teal-600 rounded-[24px] sm:rounded-[32px] p-8 sm:p-12 lg:p-14 text-white text-center overflow-hidden animate-gradient">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.12),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.08),transparent_50%)]" />
-        <div className="orb w-72 h-72 -top-20 -right-20 animate-float-slow" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)' }} />
-        <div className="orb w-56 h-56 -bottom-16 -left-16 animate-float-slow" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)', animationDelay: '3s' }} />
-        <div className="relative">
-          <h2 className="text-[24px] sm:text-[32px] lg:text-[36px]" style={{ fontWeight: 800, letterSpacing: '-0.02em' }}>Are You a Shop Owner?</h2>
-          <p className="mt-3 text-white/80 max-w-lg mx-auto text-[14px] sm:text-[16px] leading-relaxed">Register as a wholesale buyer and get exclusive pricing, bulk discounts, and dedicated support.</p>
-          <Link to="/register?role=shopowner" className="inline-flex items-center gap-2.5 mt-6 sm:mt-8 px-6 sm:px-8 py-3 sm:py-3.5 bg-white text-gray-900 rounded-full hover:bg-white/90 shadow-lg hover:shadow-xl transition-all text-[14px] sm:text-[15px] group glow-white btn-press" style={{ fontWeight: 700 }}>
-            Register as Shop Owner <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
+      <section className="relative overflow-hidden rounded-[34px] border border-slate-900/10 bg-slate-950 text-white shadow-[0_40px_120px_-55px_rgba(15,23,42,0.9)] sm:rounded-[40px]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(16,185,129,0.25),transparent_30%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_80%,rgba(59,130,246,0.18),transparent_26%)]" />
+        <div className="mesh-backdrop-dark absolute inset-0 opacity-45" />
+
+        <div className="relative grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.02fr_0.98fr] lg:items-center">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-300">Wholesale onboarding</p>
+            <h2 className="font-display mt-4 text-[2.3rem] leading-[0.95] tracking-[-0.06em] text-white sm:text-[3rem]">
+              Are you a shop owner?
+            </h2>
+            <p className="mt-4 max-w-xl text-[15px] leading-7 text-white/62">
+              Join the wholesale tier to unlock bulk pricing, dedicated support, richer inventory signals, and a storefront built to feel premium at every touchpoint.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                to="/register?role=shopowner"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-[14px] font-black uppercase tracking-[0.16em] text-slate-900 transition-all duration-300 hover:translate-y-[-2px] hover:bg-emerald-50"
+              >
+                Register as shop owner
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/products"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/14 bg-white/8 px-6 py-3.5 text-[14px] font-bold uppercase tracking-[0.16em] text-white/82 backdrop-blur-xl transition-all duration-300 hover:bg-white/12"
+              >
+                Explore products
+              </Link>
+            </div>
+          </div>
+
+          <div className="depth-stage relative h-[280px] sm:h-[340px]">
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 6.4, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute left-0 top-8 w-44 sm:w-52"
+            >
+              <TiltCard
+                className="floating-card rounded-[28px] border border-white/12 bg-white/10 backdrop-blur-xl"
+                contentClassName="p-4"
+                maxTilt={14}
+              >
+                <div className="depth-layer depth-24">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">Bulk margins</p>
+                  <p className="font-display mt-2 text-[28px] tracking-[-0.05em] text-white">18%+</p>
+                  <p className="mt-2 text-[13px] text-white/58">on recurring restocks</p>
+                </div>
+              </TiltCard>
+            </motion.div>
+
+            <motion.div
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+              className="absolute bottom-0 right-0 w-48 sm:w-56"
+            >
+              <TiltCard
+                className="floating-card rounded-[30px] border border-white/12 bg-white text-slate-900"
+                contentClassName="p-5"
+                maxTilt={14}
+              >
+                <div className="depth-layer depth-24">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Partner perks</p>
+                  <div className="mt-4 space-y-3 text-[13px] text-slate-600">
+                    <div className="flex items-center justify-between">
+                      <span>Exclusive pricing</span>
+                      <span className="font-black text-slate-900">Live</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Priority support</span>
+                      <span className="font-black text-slate-900">24/7</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Business insights</span>
+                      <span className="font-black text-slate-900">Enabled</span>
+                    </div>
+                  </div>
+                </div>
+              </TiltCard>
+            </motion.div>
+
+            <TiltCard
+              className="floating-card absolute inset-x-10 bottom-6 top-4 rounded-[34px] border border-white/12 bg-white/10 backdrop-blur-xl"
+              contentClassName="h-full p-5"
+              maxTilt={10}
+            >
+              <div className="absolute inset-0 rounded-[inherit] bg-[radial-gradient(circle_at_22%_18%,rgba(16,185,129,0.22),transparent_32%)]" />
+              <div className="mesh-backdrop-dark absolute inset-0 rounded-[inherit] opacity-35" />
+
+              <div className="depth-layer depth-24 flex h-full flex-col justify-between rounded-[28px] border border-white/12 bg-slate-950/36 p-5 text-white">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black uppercase tracking-[0.18em] text-white/45">Partner cockpit</span>
+                  <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
+                    Live access
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  {[74, 58, 88].map((value, index) => (
+                    <div key={value} className="rounded-[20px] border border-white/10 bg-white/8 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">Zone {index + 1}</p>
+                      <div className="mt-3 h-20 rounded-[16px] bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.02)_100%)] p-2">
+                        <div
+                          className="h-full rounded-[12px] bg-gradient-to-t from-emerald-400 to-cyan-300"
+                          style={{ clipPath: `polygon(0 ${100 - value}%, 100% 0, 100% 100%, 0 100%)` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </TiltCard>
+          </div>
         </div>
       </section>
     </div>
