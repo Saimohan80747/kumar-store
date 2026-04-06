@@ -1,4 +1,4 @@
-import { useState, memo, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, memo, useMemo, useCallback, useEffect, useRef, useDeferredValue } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
   Search, ShoppingCart, Heart, User, Menu, X, Package,
@@ -13,6 +13,7 @@ import type { Notification } from '../store';
 import { CATEGORIES } from '../data';
 import { toast } from 'sonner';
 import stringSimilarity from 'string-similarity';
+import { buildSearchTargets, getSearchDestination, normalizeSearchText, type SearchTarget } from '../utils/search';
 
 // ─── AI Smart Search Dropdown ───
 const SmartSearchSuggestions = memo(function SmartSearchSuggestions({
@@ -20,27 +21,55 @@ const SmartSearchSuggestions = memo(function SmartSearchSuggestions({
   onSelect
 }: {
   query: string;
-  onSelect: (q: string) => void;
+  onSelect: (target: SearchTarget) => void;
 }) {
   const products = useStore((s) => s.products);
+  const deferredQuery = useDeferredValue(query);
+  const targets = useMemo(() => buildSearchTargets(products), [products]);
   
   const suggestions = useMemo(() => {
-    if (query.length < 2) return [];
-    
-    const targets = Array.from(new Set([
-      ...products.map(p => p.name),
-      ...products.map(p => p.category.replace('-', ' ')),
-      ...products.map(p => p.brand)
-    ])).filter(Boolean);
+    const normalizedQuery = normalizeSearchText(deferredQuery);
+    if (normalizedQuery.length < 2) return [];
 
-    const matches = stringSimilarity.findBestMatch(query.toLowerCase(), targets.map(t => t.toLowerCase()));
-    
-    return matches.ratings
-      .filter(r => r.rating > 0.15)
-      .sort((a, b) => b.rating - a.rating)
+    const directMatches = targets
+      .map((target) => {
+        const starts = target.normalized.startsWith(normalizedQuery);
+        const includes = target.normalized.includes(normalizedQuery);
+        const tokenHits = normalizedQuery.split(' ').filter((token) => target.normalized.includes(token)).length;
+        const score = (starts ? 3 : 0) + (includes ? 2 : 0) + tokenHits;
+        return { target, score };
+      })
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score)
       .slice(0, 6)
-      .map(r => r.target);
-  }, [query, products]);
+      .map((entry) => entry.target);
+
+    if (directMatches.length >= 4) {
+      return directMatches;
+    }
+
+    const matches = stringSimilarity.findBestMatch(
+      normalizedQuery,
+      targets.map((target) => target.normalized)
+    );
+
+    const fuzzyMatches = matches.ratings
+      .map((rating, index) => ({ rating: rating.rating, target: targets[index] }))
+      .filter((entry) => entry.rating > 0.22)
+      .sort((a, b) => b.rating - a.rating)
+      .map((entry) => entry.target);
+
+    const merged: SearchTarget[] = [];
+    const seen = new Set<string>();
+    for (const target of [...directMatches, ...fuzzyMatches]) {
+      if (seen.has(target.url)) continue;
+      seen.add(target.url);
+      merged.push(target);
+      if (merged.length === 6) break;
+    }
+
+    return merged;
+  }, [deferredQuery, targets]);
 
   if (suggestions.length === 0) return null;
 
@@ -59,17 +88,22 @@ const SmartSearchSuggestions = memo(function SmartSearchSuggestions({
           <span className="text-[10px] font-bold text-slate-300">AI Powered</span>
         </div>
         <div className="space-y-1 mt-1">
-          {suggestions.map((s, i) => (
+          {suggestions.map((target, i) => (
             <button
               key={i}
-              onClick={() => onSelect(s)}
+              onClick={() => onSelect(target)}
               className="w-full text-left px-4 py-3.5 hover:bg-slate-50 rounded-[20px] transition-all flex items-center justify-between group"
             >
               <div className="flex items-center gap-4">
                 <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all">
                   <Search className="w-4 h-4 text-slate-400 group-hover:text-primary" />
                 </div>
-                <span className="text-[14px] text-slate-700 font-bold capitalize tracking-tight group-hover:text-slate-900 transition-colors">{s}</span>
+                <div>
+                  <span className="text-[14px] text-slate-700 font-bold capitalize tracking-tight group-hover:text-slate-900 transition-colors">{target.label}</span>
+                  <p className="mt-0.5 text-[10px] font-black uppercase tracking-widest text-slate-300">
+                    {target.kind}
+                  </p>
+                </div>
               </div>
               <ChevronRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
             </button>
@@ -343,8 +377,15 @@ export function Navbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
+    const compactThreshold = 96;
+    const expandThreshold = 32;
+    const handleScroll = () => {
+      const y = window.scrollY;
+      setScrolled((prev) => (prev ? y > expandThreshold : y > compactThreshold));
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -402,7 +443,7 @@ export function Navbar() {
 
           if (finalQuery) {
             toast.success(`Found: "${finalQuery}"`);
-            navigate(`/products?search=${encodeURIComponent(finalQuery)}`);
+            navigate(getSearchDestination(finalQuery, products));
           } else {
             toast.error("Couldn't hear clearly. Try again?");
           }
@@ -433,17 +474,16 @@ export function Navbar() {
     setSearchOpen(false);
     searchInputRef.current?.blur();
     const finalQuery = searchQuery.trim();
-    if (finalQuery) navigate(`/products?search=${encodeURIComponent(finalQuery)}`);
-  }, [searchQuery, navigate]);
+    if (finalQuery) navigate(getSearchDestination(finalQuery, products));
+  }, [navigate, products, searchQuery]);
 
   return (
-    <header className={`sticky top-0 z-50 transition-all duration-500 ${scrolled ? 'py-2' : 'py-0'}`}>
-      <div className={`mx-auto max-w-[1440px] px-0 sm:px-4 transition-all duration-500`}>
+    <header className="sticky top-0 z-50">
+      <div className="mx-auto max-w-[1440px] px-0 sm:px-4">
         <div className={`bg-white/80 backdrop-blur-2xl border-slate-200/60 shadow-sm transition-all duration-500 ${scrolled ? 'rounded-[32px] border mx-2 sm:mx-0 shadow-xl shadow-black/5' : 'border-b'}`}>
           
           {/* Top Bar (Compact) */}
-          {!scrolled && (
-            <div className="hidden sm:block bg-slate-900 text-white/70 overflow-hidden">
+          <div className={`hidden overflow-hidden bg-slate-900 text-white/70 transition-all duration-300 ease-out sm:block ${scrolled ? 'max-h-0 -translate-y-2 opacity-0 pointer-events-none' : 'max-h-16 translate-y-0 opacity-100'}`}>
               <div className="max-w-7xl mx-auto px-6 py-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-[0.15em]">
                 <div className="flex items-center gap-6">
                   <span className="flex items-center gap-2 text-primary"><MapPin className="w-3.5 h-3.5" /> India-Wide Delivery</span>
@@ -458,7 +498,6 @@ export function Navbar() {
                 </div>
               </div>
             </div>
-          )}
 
           {/* Main Navigation */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5">
@@ -478,7 +517,7 @@ export function Navbar() {
               {/* AI Search Engine */}
               <div ref={searchContainerRef} className="flex-1 max-w-2xl relative hidden sm:block">
                 <form onSubmit={handleSearch} className="relative">
-                  <div className={`flex items-center bg-slate-50 border border-slate-100 rounded-[22px] transition-all duration-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-primary/5 focus-within:border-primary/20 group ${scrolled ? 'py-0.5' : ''}`}>
+                  <div className={`flex items-center bg-slate-50 border border-slate-100 rounded-[22px] transition-all duration-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-primary/5 focus-within:border-primary/20 group ${scrolled ? 'shadow-sm shadow-black/5' : ''}`}>
                     <div className="pl-5 text-slate-400 group-focus-within:text-primary transition-colors">
                       <Search className="w-5 h-5" />
                     </div>
@@ -522,11 +561,11 @@ export function Navbar() {
                   {searchOpen && searchQuery.trim().length >= 2 && (
                     <SmartSearchSuggestions 
                       query={searchQuery} 
-                      onSelect={(q) => {
+                      onSelect={(target) => {
                         setSearchOpen(false);
-                        setSearchQuery(q);
+                        setSearchQuery(target.value);
                         searchInputRef.current?.blur();
-                        navigate(`/products?search=${encodeURIComponent(q)}`);
+                        navigate(target.url);
                       }}
                     />
                   )}

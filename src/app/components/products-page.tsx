@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router';
 import { Filter, Grid3X3, List, PackageCheck, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 import { BRANDS, CATEGORIES } from '../data';
 import { useStore } from '../store';
+import { getCategoryName, normalizeSearchText } from '../utils/search';
 import { ProductCard } from './product-card';
 
 interface FilterSidebarProps {
@@ -124,13 +125,28 @@ const FilterSidebar = memo(function FilterSidebar({
 export function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const products = useStore((s) => s.products);
-  const searchQuery = useStore((s) => s.searchQuery);
   const setSearchQuery = useStore((s) => s.setSearchQuery);
   const getPrice = useStore((s) => s.getPrice);
+  const urlSearch = searchParams.get('search') || '';
 
   const maxPrice = useMemo(() => {
     const highest = products.reduce((max, product) => Math.max(max, getPrice(product)), 0);
     return Math.max(1000, highest);
+  }, [getPrice, products]);
+
+  const searchIndex = useMemo(() => {
+    return products.map((product) => ({
+      product,
+      price: getPrice(product),
+      haystack: normalizeSearchText([
+        product.name,
+        product.brand,
+        product.category,
+        getCategoryName(product.category),
+        product.description,
+        product.sku,
+      ].join(' ')),
+    }));
   }, [getPrice, products]);
 
   const [sortBy, setSortBy] = useState('featured');
@@ -142,7 +158,6 @@ export function ProductsPage() {
   const [gridView, setGridView] = useState(true);
 
   useEffect(() => {
-    const nextSearch = searchParams.get('search') || '';
     const nextCategory = searchParams.get('category') || '';
     const nextBrands = (searchParams.get('brands') || '').split(',').filter(Boolean);
     const nextSort = searchParams.get('sort') || 'featured';
@@ -152,7 +167,9 @@ export function ProductsPage() {
     const nextStockOnly = searchParams.get('stock') === '1';
     const nextGridView = searchParams.get('view') !== 'list';
 
-    if (searchQuery !== nextSearch) setSearchQuery(nextSearch);
+    if (useStore.getState().searchQuery !== urlSearch) {
+      setSearchQuery(urlSearch);
+    }
     setSelectedCategory((prev) => (prev === nextCategory ? prev : nextCategory));
     setSelectedBrands((prev) => (prev.join(',') === nextBrands.join(',') ? prev : nextBrands));
     setSortBy((prev) => (prev === nextSort ? prev : nextSort));
@@ -161,11 +178,11 @@ export function ProductsPage() {
     setPriceRangeState((prev) => (
       prev[0] === nextMin && prev[1] === nextMax ? prev : [nextMin, Math.max(nextMin, Math.min(nextMax, maxPrice))]
     ));
-  }, [maxPrice, searchParams, searchQuery, setSearchQuery]);
+  }, [maxPrice, searchParams, setSearchQuery, urlSearch]);
 
   useEffect(() => {
     const nextParams = new URLSearchParams();
-    if (searchQuery.trim()) nextParams.set('search', searchQuery.trim());
+    if (urlSearch.trim()) nextParams.set('search', urlSearch.trim());
     if (selectedCategory) nextParams.set('category', selectedCategory);
     if (selectedBrands.length > 0) nextParams.set('brands', selectedBrands.join(','));
     if (priceRange[0] > 0) nextParams.set('min', String(priceRange[0]));
@@ -178,59 +195,53 @@ export function ProductsPage() {
     if (nextQuery !== searchParams.toString()) {
       setSearchParams(nextParams, { replace: true });
     }
-  }, [gridView, maxPrice, priceRange, searchParams, searchQuery, selectedBrands, selectedCategory, setSearchParams, sortBy, stockOnly]);
+  }, [gridView, maxPrice, priceRange, searchParams, selectedBrands, selectedCategory, setSearchParams, sortBy, stockOnly, urlSearch]);
 
   const filtered = useMemo(() => {
-    let result = [...products];
+    const normalizedQuery = normalizeSearchText(urlSearch);
+    let result = [...searchIndex];
 
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter((product) =>
-        product.name.toLowerCase().includes(query) ||
-        product.brand.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query) ||
-        product.description.toLowerCase().includes(query)
-      );
+    if (normalizedQuery) {
+      result = result.filter(({ haystack }) => haystack.includes(normalizedQuery));
     }
 
     if (selectedCategory) {
-      result = result.filter((product) => product.category === selectedCategory);
+      result = result.filter(({ product }) => product.category === selectedCategory);
     }
 
     if (selectedBrands.length > 0) {
-      result = result.filter((product) => selectedBrands.includes(product.brand));
+      result = result.filter(({ product }) => selectedBrands.includes(product.brand));
     }
 
     if (stockOnly) {
-      result = result.filter((product) => product.stock > 0);
+      result = result.filter(({ product }) => product.stock > 0);
     }
 
-    result = result.filter((product) => {
-      const price = getPrice(product);
+    result = result.filter(({ price }) => {
       return price >= priceRange[0] && price <= priceRange[1];
     });
 
     switch (sortBy) {
       case 'price-low':
-        result.sort((a, b) => getPrice(a) - getPrice(b));
+        result.sort((a, b) => a.price - b.price);
         break;
       case 'price-high':
-        result.sort((a, b) => getPrice(b) - getPrice(a));
+        result.sort((a, b) => b.price - a.price);
         break;
       case 'rating':
-        result.sort((a, b) => b.rating - a.rating);
+        result.sort((a, b) => b.product.rating - a.product.rating);
         break;
       case 'popular':
-        result.sort((a, b) => b.reviews - a.reviews);
+        result.sort((a, b) => b.product.reviews - a.product.reviews);
         break;
       default:
-        result.sort((a, b) => Number(b.featured) - Number(a.featured));
+        result.sort((a, b) => Number(b.product.featured) - Number(a.product.featured));
         break;
     }
 
-    result.sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0));
-    return result;
-  }, [getPrice, priceRange, products, searchQuery, selectedBrands, selectedCategory, sortBy, stockOnly]);
+    result.sort((a, b) => Number(b.product.stock > 0) - Number(a.product.stock > 0));
+    return result.map((entry) => entry.product);
+  }, [priceRange, searchIndex, selectedBrands, selectedCategory, sortBy, stockOnly, urlSearch]);
 
   const inStockCount = filtered.filter((product) => product.stock > 0).length;
   const featuredCount = filtered.filter((product) => product.featured).length;
@@ -248,7 +259,15 @@ export function ProductsPage() {
     setPriceRangeState([0, maxPrice]);
     setSortBy('featured');
     setStockOnly(false);
-  }, [maxPrice, setSearchQuery]);
+    setSearchParams(new URLSearchParams(), { replace: true });
+  }, [maxPrice, setSearchParams, setSearchQuery]);
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery('');
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('search');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams, setSearchQuery]);
 
   const handleSetPriceRange = useCallback((range: [number, number]) => {
     const nextMin = Number.isFinite(range[0]) ? Math.max(0, range[0]) : 0;
@@ -261,7 +280,7 @@ export function ProductsPage() {
   const toggleStockOnly = useCallback(() => setStockOnly((prev) => !prev), []);
 
   const activeFilters =
-    (searchQuery ? 1 : 0) +
+    (urlSearch ? 1 : 0) +
     (selectedCategory ? 1 : 0) +
     selectedBrands.length +
     (priceRange[0] > 0 || priceRange[1] < maxPrice ? 1 : 0) +
@@ -274,8 +293,8 @@ export function ProductsPage() {
           <h1 className="text-[24px]" style={{ fontWeight: 700 }}>
             {selectedCategory
               ? CATEGORIES.find((category) => category.slug === selectedCategory)?.name || 'Products'
-              : searchQuery
-                ? `Results for "${searchQuery}"`
+              : urlSearch
+                ? `Results for "${urlSearch}"`
                 : 'All Products'}
           </h1>
           <p className="text-[14px] text-muted-foreground">
@@ -338,10 +357,10 @@ export function ProductsPage() {
 
       {activeFilters > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
-          {searchQuery && (
+          {urlSearch && (
             <span className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-[13px] text-primary">
-              <Sparkles className="h-3.5 w-3.5" /> {searchQuery}
-              <button onClick={() => setSearchQuery('')}><X className="h-3.5 w-3.5" /></button>
+              <Sparkles className="h-3.5 w-3.5" /> {urlSearch}
+              <button onClick={clearSearch}><X className="h-3.5 w-3.5" /></button>
             </span>
           )}
           {selectedCategory && (

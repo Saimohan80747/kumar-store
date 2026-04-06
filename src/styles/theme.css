@@ -784,13 +784,15 @@ img {
 
 .depth-stage {
   perspective: 1800px;
+  perspective-origin: center;
   transform-style: preserve-3d;
 }
 
 .depth-layer {
   --depth-z: 0px;
-  transform: translateZ(var(--depth-z));
+  translate: 0 0 var(--depth-z);
   transform-style: preserve-3d;
+  backface-visibility: hidden;
 }
 
 .depth-8 {
@@ -819,6 +821,7 @@ img {
   --tilt-scale: 1;
   --tilt-glare-opacity: 0;
   position: relative;
+  isolation: isolate;
   transform-style: preserve-3d;
   transform: perspective(1800px) rotateX(var(--tilt-rotate-x)) rotateY(var(--tilt-rotate-y)) scale(var(--tilt-scale));
   transition:
@@ -826,6 +829,7 @@ img {
     box-shadow 320ms ease,
     border-color 320ms ease;
   will-change: transform;
+  touch-action: pan-y;
 }
 
 .tilt-card[data-tilt-active='true'] {
@@ -836,7 +840,9 @@ img {
   position: relative;
   z-index: 1;
   height: 100%;
+  translate: 0 0 0;
   transform-style: preserve-3d;
+  backface-visibility: hidden;
 }
 
 .tilt-card__glare {
@@ -844,6 +850,7 @@ img {
   inset: 1px;
   border-radius: inherit;
   pointer-events: none;
+  translate: 0 0 24px;
   opacity: var(--tilt-glare-opacity);
   background:
     radial-gradient(circle at var(--tilt-glare-x, 50%) var(--tilt-glare-y, 50%), rgba(255, 255, 255, 0.4), transparent 38%),
