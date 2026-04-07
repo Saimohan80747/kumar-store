@@ -4,14 +4,12 @@ import {
   AlertTriangle,
   ArrowLeft,
   Bell,
-  Globe,
   Heart,
   Loader2,
   Lock,
   Minus,
   Package,
   PackageCheck,
-  Play,
   Plus,
   RotateCcw,
   Share2,
@@ -20,11 +18,9 @@ import {
   Star,
   Tag,
   Truck,
-  Volume2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PRODUCTS_MAP } from '../data';
-import { SarvamService } from '../services/sarvam';
 import { useStore, type Product } from '../store';
 import { ProductCard } from './product-card';
 import { ProductReviews } from './product-reviews';
@@ -37,16 +33,7 @@ const FEATURES = [
   { icon: Package, text: 'Secure Packaging' },
 ];
 
-const INDIAN_LANGS = [
-  { code: 'hi-IN', name: 'Hindi' },
-  { code: 'ta-IN', name: 'Tamil' },
-  { code: 'te-IN', name: 'Telugu' },
-  { code: 'kn-IN', name: 'Kannada' },
-  { code: 'ml-IN', name: 'Malayalam' },
-  { code: 'mr-IN', name: 'Marathi' },
-  { code: 'bn-IN', name: 'Bengali' },
-  { code: 'gu-IN', name: 'Gujarati' },
-];
+
 
 function normalizeQty({
   requestedQty,
@@ -90,9 +77,6 @@ export function ProductDetail() {
   const navigate = useNavigate();
 
   const [qty, setQty] = useState(1);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [selectedLang, setSelectedLang] = useState('hi-IN');
-  const [loadingAudio, setLoadingAudio] = useState(false);
 
   const isLoggedIn = !!user;
 
@@ -183,24 +167,7 @@ export function ProductDetail() {
     if (normalized > 0) setQty(normalized);
   };
 
-  const handlePlayAudio = async () => {
-    setLoadingAudio(true);
-    try {
-      const audioContent = await SarvamService.textToSpeech(
-        `${product.name}. ${product.description}`,
-        selectedLang
-      );
-      const audio = new Audio(`data:audio/mp3;base64,${audioContent}`);
-      setIsPlaying(true);
-      audio.onended = () => setIsPlaying(false);
-      await audio.play();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to play audio';
-      toast.error(message);
-    } finally {
-      setLoadingAudio(false);
-    }
-  };
+
 
   const handleShare = async () => {
     const sharePayload = {
@@ -313,40 +280,7 @@ export function ProductDetail() {
               </div>
             </div>
 
-            <div className="mt-8 rounded-2xl border border-primary/10 bg-gradient-to-br from-primary/5 to-primary/10 p-6 shadow-premium">
-              <div className="mb-4 flex items-center gap-2">
-                <Globe className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-gray-900">AI Voice Assistant</h3>
-              </div>
-              <p className="mb-4 text-sm italic text-gray-600">Listen to product details in your preferred Indian language.</p>
 
-              <div className="flex flex-wrap items-center gap-4">
-                <select
-                  value={selectedLang}
-                  onChange={(event) => setSelectedLang(event.target.value)}
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/20"
-                >
-                  {INDIAN_LANGS.map((lang) => (
-                    <option key={lang.code} value={lang.code}>{lang.name}</option>
-                  ))}
-                </select>
-
-                <button
-                  onClick={handlePlayAudio}
-                  disabled={loadingAudio || isPlaying}
-                  className="btn-press flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-white shadow-glow transition-all hover:bg-primary/90 hover:shadow-glow-lg disabled:opacity-50"
-                >
-                  {loadingAudio ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : isPlaying ? (
-                    <Volume2 className="h-4 w-4 animate-pulse" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                  <span>{loadingAudio ? 'Generating...' : isPlaying ? 'Playing...' : 'Listen with AI'}</span>
-                </button>
-              </div>
-            </div>
 
             {isLoggedIn ? (
               <div className="mt-8 space-y-4 rounded-xl border border-primary/10 bg-gradient-to-br from-gray-50 to-primary/[0.02] p-4">
