@@ -129,6 +129,8 @@ npm run build
 
 - `npm run dev` - Start Vite development server
 - `npm run build` - Build production assets into `dist/`
+- `npm run preview` - Serve the production build locally
+- `npm run typecheck` - Run TypeScript checks without emitting files
 
 ## Routing Reference
 
