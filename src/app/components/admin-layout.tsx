@@ -10,7 +10,7 @@ import { Toaster } from 'sonner';
 import { toast } from 'sonner';
 import { isDeviceBlocked, setPersistentBlock } from '../utils/security';
 
-// The admin password — change this to your own secret password
+// The admin password — change this to your own secure password
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'saimohan';
 
 const ADMIN_PASSWORD_KEYS = ['admin_password', 'kumar_admin_password', 'adminPassword'];
