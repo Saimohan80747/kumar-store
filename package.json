@@ -7,7 +7,8 @@
     "build": "vite build",
     "dev": "vite",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write src"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -94,5 +95,11 @@
     "overrides": {
       "vite": "6.3.5"
     }
+  },
+  "description": "Wholesale e-commerce platform",
+  "author": "Kumar Store",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
