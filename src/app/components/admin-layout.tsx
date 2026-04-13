@@ -27,6 +27,11 @@ const sidebarItems = [
   { path: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
+/**
+ * AdminLayout provides the main container for all administrative pages.
+ * It manages admin authentication session, handles the sidebar navigation,
+ * and tracks pending requests like shop approvals or product requests.
+ */
 export function AdminLayout() {
   const user = useStore((s) => s.user);
   const logout = useStore((s) => s.logout);
@@ -423,14 +428,24 @@ export function AdminLayout() {
     </div>
   );
 }
-/ /   o p t i m i z a t i o n   1  
- / /   o p t i m i z a t i o n   2  
- / /   o p t i m i z a t i o n   3  
- / /   o p t i m i z a t i o n   4  
- / /   o p t i m i z a t i o n   5  
- / /   o p t i m i z a t i o n   6  
- / /   o p t i m i z a t i o n   7  
- / /   o p t i m i z a t i o n   8  
- / /   o p t i m i z a t i o n   9  
- / /   o p t i m i z a t i o n   1 0  
+/ /   o p t i m i z a t i o n   1 
+ 
+ / /   o p t i m i z a t i o n   2 
+ 
+ / /   o p t i m i z a t i o n   3 
+ 
+ / /   o p t i m i z a t i o n   4 
+ 
+ / /   o p t i m i z a t i o n   5 
+ 
+ / /   o p t i m i z a t i o n   6 
+ 
+ / /   o p t i m i z a t i o n   7 
+ 
+ / /   o p t i m i z a t i o n   8 
+ 
+ / /   o p t i m i z a t i o n   9 
+ 
+ / /   o p t i m i z a t i o n   1 0 
+ 
  
