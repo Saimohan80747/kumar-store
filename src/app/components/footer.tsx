@@ -77,7 +77,7 @@ export const Footer = memo(function Footer() {
         </div>
         <div className="border-t border-gray-800/80 mt-10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[13px] text-gray-500">
           <div className="flex items-center gap-2">
-            <p>© 2026 Kumar Store. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Kumar Store. All rights reserved.</p>
             <span className="hidden sm:inline text-gray-600">•</span>
             <span className="hidden sm:inline text-gray-500 flex items-center gap-1">Made with <Heart className="w-3 h-3 text-red-400 fill-red-400" /> in India</span>
           </div>
