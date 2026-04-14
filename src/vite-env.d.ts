@@ -2,6 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_ADMIN_PASSWORD: string;
+  readonly VITE_SUPABASE_URL: string;
+  readonly VITE_SUPABASE_ANON_KEY: string;
   // more env variables...
 }
 
