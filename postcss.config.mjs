@@ -13,3 +13,5 @@
  * Otherwise, you can leave this file empty.
  */
 export default {}
+
+// NOTE: PostCSS configured for Tailwind v4 and beyond.
