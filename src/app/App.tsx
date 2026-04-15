@@ -18,6 +18,7 @@ function PageLoader() {
       role="status"
       aria-live="polite"
       aria-busy="true"
+      aria-label="Loading application content"
     >
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
