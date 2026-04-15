@@ -12,6 +12,11 @@ export default defineConfig({
     port: 3000,
     open: true,
   },
+  preview: {
+    port: 8080,
+    open: true,
+  },
+  /* Config plugins */
   plugins: [
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them
