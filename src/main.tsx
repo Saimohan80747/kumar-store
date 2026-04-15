@@ -4,6 +4,7 @@
   import App from "./app/App.tsx";
   import "./styles/index.css";
 
+  // Render the application tree
   createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
       <App />
