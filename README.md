@@ -7,6 +7,7 @@
 ![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Backend-3FCF8E?logo=supabase&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
 
 original design source:  
 [Figma Design Source](https://www.figma.com/design/iECVv2Xqi46cAbwXBlYWTI/Build-Extraordinary-Website)
