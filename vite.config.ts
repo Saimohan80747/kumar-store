@@ -7,6 +7,7 @@ export default defineConfig({
   clearScreen: false,
   build: {
     sourcemap: true,
+    outDir: "dist",
   },
   server: {
     port: 3000,
