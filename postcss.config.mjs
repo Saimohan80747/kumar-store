@@ -15,3 +15,4 @@
 export default {}
 
 // NOTE: PostCSS configured for Tailwind v4 and beyond.
+// No extra configuration needed unless importing nested/custom plugins
