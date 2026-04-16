@@ -14,6 +14,7 @@ original design source:
 
 ## Table of Contents
 
+- [Features](#features)
 - [Why This Project Is Strong](#why-this-project-is-strong)
 - [Experience Map](#experience-map)
 - [Architecture Snapshot](#architecture-snapshot)
