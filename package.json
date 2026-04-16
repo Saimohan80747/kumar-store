@@ -3,6 +3,7 @@
   "private": true,
   "description": "A fast wholesale + retail commerce experience",
   "author": "Kumar Store",
+  "license": "MIT",
   "version": "0.0.1",
   "type": "module",
   "engines": {
