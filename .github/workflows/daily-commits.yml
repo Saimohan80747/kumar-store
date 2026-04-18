@@ -22,7 +22,10 @@ jobs:
           do
             echo "Auto commit $i on $(date)" >> dummy_commits.txt
             git add dummy_commits.txt
-            git commit -m "Automated daily commit $i"
+            git commit -m "commit $i"
           done
           
           git push
+
+      - name: Keepalive Workflow
+        uses: gautamkrishnar/keepalive-workflow@v2
