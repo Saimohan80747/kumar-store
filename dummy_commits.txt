@@ -25,3 +25,4 @@ Dummy commit 4
 Dummy commit 5
 Dummy commit 6
 Dummy commit 7
+Dummy commit 8
