@@ -10,3 +10,8 @@ ts_errors.txt
 vite-response.js
 test_sarvam.mjs
 test-auth-trigger.ts
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
