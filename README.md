@@ -227,3 +227,10 @@ Configured in `vercel.json`:
 
 No license file is currently defined.  
 If this repository will be shared publicly, add a license before distribution.
+
+
+## Built With
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
