@@ -3,6 +3,7 @@ import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
+// Vite configuration for the React application
 export default defineConfig({
   clearScreen: false,
   build: {
