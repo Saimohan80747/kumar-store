@@ -1,0 +1,7 @@
+/* TEAM */
+Developer: Kumar Store Team
+
+/* SITE */
+Language: English
+Doctype: HTML5
+IDE: VS Code
