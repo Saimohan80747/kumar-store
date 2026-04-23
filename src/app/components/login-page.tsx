@@ -103,6 +103,10 @@ export function LoginPage() {
     }
   };
 
+  const handleForgotPassword = () => {
+    toast.info('Password recovery is not enabled yet. Use the demo account or contact support for help.');
+  };
+
   const demoCredentials = {
     customer: { email: 'priya@gmail.com', password: 'password123', name: 'Priya Sharma' },
     shopowner: { email: 'raj@kirana.com', password: 'password123', name: 'Raj Kumar' },
@@ -274,7 +278,7 @@ export function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between ml-1">
                   <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest">Password</label>
-                  <button type="button" className="text-[11px] font-black text-primary uppercase tracking-widest hover:underline">Forgot?</button>
+                  <button type="button" onClick={handleForgotPassword} className="text-[11px] font-black text-primary uppercase tracking-widest hover:underline">Forgot?</button>
                 </div>
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 group-focus-within:text-primary transition-colors" />
