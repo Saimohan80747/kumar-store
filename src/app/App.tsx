@@ -14,15 +14,15 @@ function DBInit() {
 function PageLoader() {
   return (
     <div 
-      className="min-h-screen flex items-center justify-center bg-gray-50"
+      className="min-h-screen flex items-center justify-center bg-background transition-opacity duration-300"
       role="status"
       aria-live="polite"
       aria-busy="true"
       aria-label="Loading application content"
     >
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Loading...</p>
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin text-primary" />
+        <p className="text-base font-medium text-muted-foreground animate-pulse">Loading application...</p>
       </div>
     </div>
   );
