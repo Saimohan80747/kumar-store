@@ -394,18 +394,21 @@ const HeroBanner = memo(function HeroBanner() {
         <div className="flex items-center gap-2">
           {HERO_SLIDES.map((slide, index) => (
             <button
+              type="button"
               key={slide.title}
               onClick={() => setCurrent(index)}
               className={`h-2 rounded-full transition-all duration-300 ${
                 index === current ? 'w-12 bg-white' : 'w-2 bg-white/35 hover:bg-white/55'
               }`}
               aria-label={`Go to slide ${index + 1}`}
+              aria-pressed={index === current}
             />
           ))}
         </div>
 
         <div className="hidden gap-2 sm:flex">
           <button
+            type="button"
             onClick={() => setCurrent((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)}
             className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/8 text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/14"
             aria-label="Previous slide"
@@ -413,6 +416,7 @@ const HeroBanner = memo(function HeroBanner() {
             <ChevronLeft className="h-5 w-5" />
           </button>
           <button
+            type="button"
             onClick={() => setCurrent((prev) => (prev + 1) % HERO_SLIDES.length)}
             className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/8 text-white backdrop-blur-xl transition-all duration-300 hover:bg-white/14"
             aria-label="Next slide"
