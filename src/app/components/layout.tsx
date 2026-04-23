@@ -64,12 +64,12 @@ export function Layout() {
               </div>
             </div>
 
-            <button 
-              onClick={() => window.location.href = 'mailto:support@kumarstore.com'}
-              className="w-full mt-8 py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-colors"
+            <a
+              href="mailto:support@kumarstore.com"
+              className="w-full mt-8 inline-flex items-center justify-center py-3 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-colors"
             >
               Contact Support
-            </button>
+            </a>
             
             {user ? (
               <button 
