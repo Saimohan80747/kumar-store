@@ -193,10 +193,18 @@ export function AdminLayout() {
                   placeholder={isBlocked ? "Account Blocked" : "Enter admin password"}
                   className="flex-1 px-3 py-3.5 bg-transparent outline-none text-[14px] text-white placeholder:text-slate-500 disabled:opacity-50"
                   autoFocus
+                  autoComplete="current-password"
                   disabled={isBlocked}
                   required
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="pr-4 hover:opacity-70 transition-opacity disabled:opacity-30" disabled={isBlocked}>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="pr-4 hover:opacity-70 transition-opacity disabled:opacity-30"
+                  aria-label={showPassword ? 'Hide admin password' : 'Show admin password'}
+                  aria-pressed={showPassword}
+                  disabled={isBlocked}
+                >
                   {showPassword ? <EyeOff className="w-4 h-4 text-slate-500" /> : <Eye className="w-4 h-4 text-slate-500" />}
                 </button>
               </div>
