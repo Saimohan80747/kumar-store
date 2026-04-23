@@ -126,18 +126,42 @@ const TOP_BRANDS = ['Surf Excel', 'Tata Tea', 'Colgate', 'Dove', 'Nescafe', 'Mag
 
 const HeroBanner = memo(function HeroBanner() {
   const [current, setCurrent] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const activeSlide = HERO_SLIDES[current];
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const syncReducedMotion = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    syncReducedMotion();
+    mediaQuery.addEventListener('change', syncReducedMotion);
+
+    return () => mediaQuery.removeEventListener('change', syncReducedMotion);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion || isPaused) return;
+
+    const timer = window.setInterval(() => {
       setCurrent((prev) => (prev + 1) % HERO_SLIDES.length);
     }, 5000);
 
-    return () => clearInterval(timer);
-  }, []);
+    return () => window.clearInterval(timer);
+  }, [isPaused, prefersReducedMotion]);
 
   return (
-    <section className="relative overflow-hidden rounded-[32px] border border-slate-900/10 bg-slate-950 shadow-[0_45px_140px_-60px_rgba(15,23,42,0.8)] sm:rounded-[40px]">
+    <section
+      className="relative overflow-hidden rounded-[32px] border border-slate-900/10 bg-slate-950 shadow-[0_45px_140px_-60px_rgba(15,23,42,0.8)] sm:rounded-[40px]"
+      onPointerEnter={() => setIsPaused(true)}
+      onPointerLeave={() => setIsPaused(false)}
+      onFocusCapture={() => setIsPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setIsPaused(false);
+        }
+      }}
+    >
       {HERO_SLIDES.map((slide, index) => (
         <div
           key={slide.title}
