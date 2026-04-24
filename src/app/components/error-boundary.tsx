@@ -19,30 +19,28 @@ export function GlobalErrorBoundary() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
-            <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-border/60 shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
-                <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-red-500">
-                    {isNetworkError ? <RefreshCw className="w-8 h-8 opacity-80" /> : <AlertTriangle className="w-8 h-8 opacity-80" />}
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+            <div className="max-w-md w-full bg-card rounded-3xl p-8 border border-border shadow-lg">
+                <div className="w-16 h-16 bg-destructive/10 rounded-2xl flex items-center justify-center mx-auto mb-6 text-destructive">
+                    {isNetworkError ? <RefreshCw className="w-8 h-8" /> : <AlertTriangle className="w-8 h-8" />}
                 </div>
-                <h1 className="text-[20px] text-gray-900 mb-2" style={{ fontWeight: 700 }}>
+                <h1 className="text-xl text-foreground mb-2 font-bold">
                     {isNetworkError ? 'Connection Lost' : 'Oops! Something went wrong'}
                 </h1>
-                <p className="text-[14px] text-muted-foreground mb-8">
+                <p className="text-sm text-muted-foreground mb-8 text-balance">
                     {errorMessage}
                 </p>
                 <div className="flex flex-col gap-3">
                     <button
                         onClick={() => window.location.reload()}
-                        className="w-full py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-[14px]"
-                        style={{ fontWeight: 600 }}
+                        className="w-full py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm font-semibold"
                     >
                         <RefreshCw className="w-4 h-4" /> Try Again
                     </button>
                     <Link
                         to="/"
                         onClick={() => window.location.href = '/'}
-                        className="w-full py-3 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors border border-border/60 flex items-center justify-center gap-2 text-[14px]"
-                        style={{ fontWeight: 600 }}
+                        className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl hover:bg-secondary/80 transition-colors border border-border/50 flex items-center justify-center gap-2 text-sm font-semibold"
                     >
                         <Home className="w-4 h-4 opacity-70" /> Return to Home
                     </Link>
