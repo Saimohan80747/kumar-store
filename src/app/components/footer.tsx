@@ -12,19 +12,20 @@ export const Footer = memo(function Footer() {
       {/* Newsletter */}
       <div className="max-w-7xl mx-auto px-4 pt-14 pb-8">
         <div className="bg-gradient-to-r from-gray-800/60 to-gray-800/30 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 border border-gray-700/50">
-          <div>
-            <h3 className="text-white text-[18px]" style={{ fontWeight: 700 }}>Stay Updated</h3>
-            <p className="text-gray-400 text-[14px] mt-1">Get the latest deals, new arrivals & exclusive wholesale offers.</p>
+          <div className="text-center sm:text-left w-full sm:w-auto mb-4 sm:mb-0">
+            <h3 className="text-white text-lg font-bold">Stay Updated</h3>
+            <p className="text-gray-400 text-sm mt-1">Get the latest deals, new arrivals & exclusive wholesale offers.</p>
           </div>
-          <form onSubmit={(e) => { e.preventDefault(); if (email.trim()) { toast.success('Subscribed! Welcome aboard.'); setEmail(''); } }} className="flex w-full sm:w-auto">
+          <form onSubmit={(e) => { e.preventDefault(); if (email.trim()) { toast.success('Subscribed! Welcome aboard.'); setEmail(''); } }} className="flex flex-col sm:flex-row w-full sm:w-auto gap-3 sm:gap-0">
             <input
               type="email"
               value={email}
+              aria-label="Email address for newsletter"
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
-              className="flex-1 sm:w-64 px-4 py-2.5 bg-gray-900/60 border border-gray-700 rounded-l-xl text-[14px] text-white placeholder:text-gray-500 outline-none focus:border-primary/50 transition-colors"
+              className="w-full sm:flex-1 sm:w-64 px-4 py-3 sm:py-2.5 bg-gray-900/60 border border-gray-700 rounded-xl sm:rounded-r-none sm:rounded-l-xl text-sm text-white placeholder:text-gray-500 outline-none focus:border-primary/50 transition-colors"
             />
-            <button type="submit" className="px-5 py-2.5 bg-gradient-to-r from-primary to-emerald-600 text-white rounded-r-xl hover:shadow-lg hover:shadow-primary/20 transition-all flex items-center gap-2 text-[14px] btn-press" style={{ fontWeight: 600 }}>
+            <button type="submit" className="w-full sm:w-auto px-6 py-3 sm:py-2.5 bg-gradient-to-r from-primary to-emerald-600 text-white rounded-xl sm:rounded-l-none sm:rounded-r-xl hover:shadow-lg hover:shadow-primary/20 transition-all flex items-center justify-center gap-2 text-sm font-semibold btn-press" aria-label="Subscribe to newsletter">
               <Send className="w-4 h-4" /> Subscribe
             </button>
           </form>
