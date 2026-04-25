@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 export const Footer = memo(function Footer() {
   const [email, setEmail] = useState('');
   return (
-    <footer className="bg-gradient-to-b from-gray-900 to-gray-950 text-gray-300">
+    <footer role="contentinfo" className="bg-gradient-to-b from-gray-900 to-gray-950 text-gray-300">
       <div className="h-1 bg-gradient-to-r from-primary via-emerald-500 to-teal-500 animate-gradient-fast" style={{ backgroundSize: '200% 100%' }} />
 
       {/* Newsletter */}
