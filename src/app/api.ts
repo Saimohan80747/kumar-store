@@ -414,5 +414,6 @@ export const updateProduct = (id: string, updates: any) =>
   request(`/products/${id}`, { method: 'PUT', body: JSON.stringify(updates) });
 export const deleteProduct = (id: string) =>
   request(`/products/${id}`, { method: 'DELETE' });
-e x p o r t   c o n s t   A P I _ R E A D Y   =   t r u e ;  
+e x p o r t   c o n s t   A P I _ R E A D Y   =   t r u e ; 
+ 
  
