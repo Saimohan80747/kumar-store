@@ -27,6 +27,7 @@ function getStepQty(minWholesaleQty: number, role?: string) {
   return role === 'shopowner' ? Math.max(1, minWholesaleQty || 1) : 1;
 }
 
+/** Dedicated view for reviewing cart and preparing checkout. */
 export function CartPage() {
   const cart = useStore((s) => s.cart);
   const updateCartQty = useStore((s) => s.updateCartQty);
