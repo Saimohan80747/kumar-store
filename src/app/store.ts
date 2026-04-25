@@ -6,7 +6,8 @@ import { sanitizeInput, checkRateLimit } from './utils/security';
 
 export type UserRole = 'customer' | 'shopowner' | 'admin';
 
-/** System user representation */`nexport interface User {
+/** System user representation */`n/** System user representation */
+export interface User {
   id: string;
   name: string;
   email: string;
