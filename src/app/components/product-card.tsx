@@ -6,6 +6,7 @@ import { useStore, type Product } from '../store';
 import { toast } from 'sonner';
 import { TiltCard } from './ui/tilt-card';
 
+/** Memoized list item for rendering individual products efficiently. */
 export const ProductCard = memo(function ProductCard({ product }: { product: Product }) {
   const user = useStore((s) => s.user);
   const cart = useStore((s) => s.cart);
