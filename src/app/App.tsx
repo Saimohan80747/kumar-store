@@ -4,6 +4,7 @@ import { router } from './routes';
 import { useStore } from './store';
 
 /** Initializes the local and remote database records. */
+/** Initializes the local and remote database records. */
 function DBInit() {
   const initDB = useStore((s) => s.initDB);
   useEffect(() => {
