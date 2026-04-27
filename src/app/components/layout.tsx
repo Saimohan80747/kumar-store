@@ -9,6 +9,7 @@ import { AiAssistant } from './ai-assistant';
 import { isDeviceBlocked } from '../utils/security';
 
 /** Primary screen layout wrapping all standard views. */
+/** Primary screen layout wrapping all standard views. */
 export function Layout() {
   const user = useStore((s) => s.user);
   const logout = useStore((s) => s.logout);
