@@ -70,3 +70,4 @@ export const router = createBrowserRouter([
     ],
   },
 ]);
+// Code styling update 1
