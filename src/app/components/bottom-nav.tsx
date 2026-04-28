@@ -31,7 +31,7 @@ export function BottomNav() {
   };
 
   return (
-    <nav aria-label="Bottom Navigation" aria-label="Bottom Navigation" className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-2xl border-t border-border/40 z-50 safe-area-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
+    <nav aria-label="Bottom Navigation" aria-label="Bottom Navigation" aria-label="Bottom Navigation" className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-2xl border-t border-border/40 z-50 safe-area-bottom shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
       <div className="flex items-center justify-around h-16">
         {NAV_ITEMS.map((item) => {
           const isActive = item.path === '/'
