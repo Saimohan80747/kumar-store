@@ -71,3 +71,5 @@ export const PRODUCTS_BY_CATEGORY = products.reduce<Record<string, Product[]>>((
 }, {});
 export const FEATURED_PRODUCTS = products.filter((p) => p.featured);
 export const BEST_SELLERS = products.filter((p) => p.reviews > 500).slice(0, 4);
+
+// Code styling update 2
