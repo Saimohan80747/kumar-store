@@ -24,6 +24,7 @@ const BENEFITS = {
 
 /** Authentication entrypoint for existing users. */
 /** Authentication entrypoint for existing users. */
+/** Authentication entrypoint for existing users. */
 export function LoginPage() {
   const login = useStore((s) => s.login);
   const checkEmailExists = useStore((s) => s.checkEmailExists);
