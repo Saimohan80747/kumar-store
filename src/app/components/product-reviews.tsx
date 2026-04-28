@@ -351,3 +351,5 @@ export function ProductReviews({ productId }: { productId: string }) {
   );
 }
 
+
+// Code styling update 7
