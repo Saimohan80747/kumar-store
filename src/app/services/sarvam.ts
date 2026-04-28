@@ -76,3 +76,5 @@ export class SarvamService {
         return data.audios[0]; // Accessing the first audio output from the audios array
     }
 }
+
+// Code styling update 3
