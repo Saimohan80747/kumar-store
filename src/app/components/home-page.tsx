@@ -692,6 +692,7 @@ function AiSection() {
 
 /** Default route component rendering top promotions. */
 /** Default route component rendering top promotions. */
+/** Default route component rendering top promotions. */
 export function HomePage() {
   const userRole = useStore((state) => state.user?.role);
   const recentlyViewed = useStore((state) => state.recentlyViewed);
