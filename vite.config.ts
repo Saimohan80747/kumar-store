@@ -7,6 +7,7 @@ import react from '@vitejs/plugin-react'
 /** Vite config wrapper enforcing build rules */
 /** Vite config wrapper enforcing build rules */
 /** Vite config wrapper enforcing build rules */
+/** Vite config wrapper enforcing build rules */
 export default defineConfig({
   clearScreen: false,
   build: {
