@@ -30,6 +30,7 @@ function getStepQty(minWholesaleQty: number, role?: string) {
 /** Dedicated view for reviewing cart and preparing checkout. */
 /** Dedicated view for reviewing cart and preparing checkout. */
 /** Dedicated view for reviewing cart and preparing checkout. */
+/** Dedicated view for reviewing cart and preparing checkout. */
 export function CartPage() {
   const cart = useStore((s) => s.cart);
   const updateCartQty = useStore((s) => s.updateCartQty);
