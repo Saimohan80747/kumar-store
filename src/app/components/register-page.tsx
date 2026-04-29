@@ -80,6 +80,7 @@ const BENEFITS = {
 /** Onboarding structure and validation for new user creation. */
 /** Onboarding structure and validation for new user creation. */
 /** Onboarding structure and validation for new user creation. */
+/** Onboarding structure and validation for new user creation. */
 export function RegisterPage() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
