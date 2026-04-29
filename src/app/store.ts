@@ -8,6 +8,7 @@ export type UserRole = 'customer' | 'shopowner' | 'admin';
 
 /** System user representation */`n/** System user representation */
 /** System user representation */
+/** System user representation */
 export interface User {
   id: string;
   name: string;
