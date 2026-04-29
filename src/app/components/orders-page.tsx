@@ -9,6 +9,7 @@ import * as api from '../api';
 /** Visual milestones representing order progression. */
 /** Visual milestones representing order progression. */
 /** Visual milestones representing order progression. */
+/** Visual milestones representing order progression. */
 const MINI_STEPS = [
   { id: 'placed', label: 'Placed', icon: ShoppingBag },
   { id: 'accepted', label: 'Accepted', icon: CheckCircle2 },
