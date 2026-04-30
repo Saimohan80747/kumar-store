@@ -80,3 +80,5 @@ export function isDeviceBlocked(): boolean {
     return raw === 'true';
   }
 }
+
+// Core security utility functions
