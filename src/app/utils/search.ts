@@ -99,3 +99,5 @@ export function buildSearchTargets(products: Product[]): SearchTarget[] {
 // Code styling update 4
 
 // Client-side search and filtering logic
+
+// Search filtering utilities
