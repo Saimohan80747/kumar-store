@@ -73,3 +73,5 @@ export const router = createBrowserRouter([
 // Code styling update 1
 
 // Route definitions for main navigation
+
+// Route definitions block
