@@ -11,3 +11,5 @@ if (!supabaseUrl || !supabaseAnonKey) {
 /** Initialize central Supabase client instance */
 /** Initialize central Supabase client instance */
 export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder');
+
+// Exported Supabase client configuration
