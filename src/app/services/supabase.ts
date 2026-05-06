@@ -15,3 +15,5 @@ export const supabase = createClient(supabaseUrl || 'https://placeholder.supabas
 // Exported Supabase client configuration
 
 // Supabase initialization export
+
+// Supabase initialization export
