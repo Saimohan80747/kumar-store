@@ -101,3 +101,5 @@ export function buildSearchTargets(products: Product[]): SearchTarget[] {
 // Client-side search and filtering logic
 
 // Search filtering utilities
+
+// Search filtering utilities
